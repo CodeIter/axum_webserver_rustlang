@@ -1,0 +1,7 @@
+//! Business logic. Free of HTTP types so it is easy to unit test.
+
+pub mod client_ip;
+pub mod number;
+pub mod password;
+pub mod redirect;
+pub mod system;
