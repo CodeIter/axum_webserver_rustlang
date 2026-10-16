@@ -1,0 +1,25 @@
+[package]
+name = "axum-server"
+version = "0.1.0"
+edition = "2021"
+description = "Production-grade, modular Axum 0.8 web server"
+license = "MIT"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "fs"] }
+tower-http = { version = "0.6", features = ["fs", "timeout", "set-header"] }
+clap = { version = "4", features = ["derive", "env"] }
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.9"
+percent-encoding = "2"
+thiserror = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
