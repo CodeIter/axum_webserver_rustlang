@@ -1,5 +1,6 @@
 /target
 .env
+getfiles.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/rust,rust-analyzer
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust,rust-analyzer
