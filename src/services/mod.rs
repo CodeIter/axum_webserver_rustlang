@@ -4,4 +4,5 @@ pub mod client_ip;
 pub mod number;
 pub mod password;
 pub mod redirect;
+pub mod request_info;
 pub mod system;

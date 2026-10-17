@@ -2,4 +2,5 @@
 
 pub mod generate;
 pub mod redirect;
+pub mod request_info;
 pub mod system;

@@ -1,9 +1,12 @@
 //! `/api/v1` route table.
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::get,
+    Router,
+};
 
 use crate::{
-    handlers::{generate, redirect, system},
+    handlers::{generate, redirect, request_info, system},
     middleware::headers,
     state::AppState,
 };
@@ -15,6 +18,8 @@ pub fn router() -> Router<AppState> {
         .route("/ready", get(system::ready))
         .route("/health", get(system::health))
         .route("/ip", get(system::client_ip))
+        .route("/http/headers", get(request_info::headers))
+        .route("/http/xff", get(request_info::xff))
         .route("/number/{min}/{max}/{quantity}", get(generate::number))
         .route("/password/{length}/{quantity}", get(generate::password))
         // `{*path}` captures all remaining segments (Axum 0.8 syntax).

@@ -14,6 +14,9 @@ Run `cargo run -- --help` for all options; see `.env.example` for env names.
 | `GET /hello`                               | "Hello World"                        |
 | `GET /ready`                               | Readiness (503 while shutting down)  |
 | `GET /health`                              | Status + system metrics              |
+| `GET /ip`                                  | Detected client IP + source          |
+| `GET /http/headers`                        | All request headers (JSON)           |
+| `GET /http/xff`                            | Raw CF-Connecting-IP / True-Client-IP / X-Forwarded-For |
 | `GET /number/{min}/{max}/{quantity}`       | Random integers                      |
 | `GET /password/{length}/{quantity}?chars=` | CSPRNG passwords                     |
 | `GET /redirect/{proto}/{domain}/{*path}?…` | 307 redirect                         |
