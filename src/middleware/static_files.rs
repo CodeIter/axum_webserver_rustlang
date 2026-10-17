@@ -16,10 +16,16 @@ use axum::{
 };
 use percent_encoding::{percent_decode_str, utf8_percent_encode};
 
-use crate::{config::DotfilePolicy, services::redirect::PATH_SEGMENT};
+use crate::{
+    config::DotfilePolicy,
+    handlers::pages,
+    services::{redirect::PATH_SEGMENT, templates::Templates},
+};
 
 /// Immutable settings for [`static_guard`].
 pub struct StaticGuard {
+    /// Used to render the custom 404 page for ignored dotfiles.
+    pub templates: Templates,
     pub root: PathBuf,
     pub index_file: String,
     pub dotfiles: DotfilePolicy,
@@ -57,7 +63,8 @@ pub async fn static_guard(
     if guard.dotfiles != DotfilePolicy::Allow && touches_dotfile(&decoded) {
         return match guard.dotfiles {
             DotfilePolicy::Deny => StatusCode::FORBIDDEN.into_response(),
-            _ => StatusCode::NOT_FOUND.into_response(),
+            // `Ignore`: indistinguishable from any other missing file.
+            _ => pages::not_found_page(&guard.templates),
         };
     }
 

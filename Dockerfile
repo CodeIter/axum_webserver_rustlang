@@ -22,10 +22,13 @@ RUN apk add --no-cache ca-certificates \
 WORKDIR /app
 
 COPY --from=builder /app/target/release/axum-server /usr/local/bin/axum-server
+# Handlebars templates are read at startup; the server refuses to start without them.
+COPY --chown=app:app templates ./templates
 COPY --chown=app:app public ./public
 
 # Render injects PORT at runtime (default 10000); the app reads it directly.
 ENV PORT=10000 \
+    TEMPLATES_DIR=/app/templates \
     STATIC_ROOT=/app/public \
     LOG_FORMAT=json \
     TRUST_PROXY_HEADERS=true \

@@ -6,3 +6,4 @@ pub mod password;
 pub mod redirect;
 pub mod request_info;
 pub mod system;
+pub mod templates;

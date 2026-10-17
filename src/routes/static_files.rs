@@ -2,23 +2,31 @@
 
 use std::sync::Arc;
 
-use axum::{middleware::from_fn_with_state, Router};
+use axum::{handler::Handler, middleware::from_fn_with_state, Router};
 use tower_http::services::ServeDir;
 
 use crate::{
     config::Config,
+    handlers::pages,
     middleware::static_files::{static_guard, StaticGuard},
+    services::templates::Templates,
 };
 
 /// Serves `config.static_root`, guarded by the dotfile policy and index handling.
-pub fn router(config: &Config) -> Router {
+///
+/// This is the last stop of the request pipeline: files that do not exist get
+/// the custom 404 page (status 404) rendered from `404.hbs`.
+pub fn router(config: &Config, templates: Templates) -> Router {
     // Index handling is done by `static_guard` so the file name is configurable.
-    let serve_dir = ServeDir::new(&config.static_root).append_index_html_on_directories(false);
+    let serve_dir = ServeDir::new(&config.static_root)
+        .append_index_html_on_directories(false)
+        .not_found_service(pages::not_found.with_state(templates.clone()));
 
     let guard = Arc::new(StaticGuard {
         root: config.static_root.clone(),
         index_file: config.static_index_file.clone(),
         dotfiles: config.static_dotfiles,
+        templates,
     });
 
     Router::new()

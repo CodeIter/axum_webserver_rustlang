@@ -25,9 +25,10 @@ mod shutdown;
 mod state;
 
 use config::Config;
+use services::templates::Templates;
 use state::AppState;
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -35,13 +36,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::load();
     logging::init(config.log_format, config.log_level);
 
-    let state = AppState::new(&config);
+    // Fail fast: a server without its templates cannot render pages or 404s.
+    let templates = Templates::load(&config.templates_dir).unwrap_or_else(|err| {
+        error!(%err, "cannot start");
+        std::process::exit(1);
+    });
+
+    let state = AppState::new(&config, templates);
     let app = app::build(&config, state.clone());
 
     let listener = TcpListener::bind(config.socket_addr()).await?;
     info!(
         addr = %listener.local_addr()?,
         static_root = %config.static_root.display(),
+        templates_dir = %config.templates_dir.display(),
         "server listening"
     );
 

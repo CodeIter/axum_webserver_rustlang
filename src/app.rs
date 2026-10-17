@@ -28,7 +28,8 @@ use crate::{
 /// *first*. Request flow, outermost to innermost:
 ///
 /// ```text
-/// client_ip -> access_log -> security headers -> rate limit -> concurrency limit -> timeout -> routes
+/// client_ip -> access_log -> security headers -> rate limit -> concurrency limit -> timeout
+///   -> templates -> API -> static files -> custom 404
 /// ```
 ///
 /// * Client-IP resolution is outermost: logger, rate limiter and handlers all use it.
@@ -43,10 +44,17 @@ pub fn build(config: &Config, state: AppState) -> Router {
     ));
     limiter.spawn_janitor();
 
+    // Request pipeline (after the global middleware layers added below):
+    //   1. template routes  (`/`, `/about`)
+    //   2. API endpoints    (`/api/v1/*`)
+    //   3. static files     (fallback)
+    //   4. custom 404 page  (static service's not-found fallback)
+    // Matching is by exact route, so the explicit routes always win over the
+    // static fallback (e.g. a file named `index.html` cannot shadow `/`).
     let router = Router::new()
+        .merge(routes::pages::router())
         .nest("/api/v1", routes::api::router())
-        // Anything that is not an API route is served from the static directory.
-        .fallback_service(routes::static_files::router(config))
+        .fallback_service(routes::static_files::router(config, state.templates.clone()))
         .with_state(state.clone());
 
     let router = router

@@ -21,7 +21,15 @@ Run `cargo run -- --help` for all options; see `.env.example` for env names.
 | `GET /password/{length}/{quantity}?chars=` | CSPRNG passwords                     |
 | `GET /redirect/{proto}/{domain}/{*path}?…` | 307 redirect                         |
 
-Everything else is served from `--static-root` (default `./public`).
+### Pages, templates and request order
+
+Handlebars templates live in `--templates-dir` (`TEMPLATES_DIR`, default `./templates`):
+`layouts/layout.hbs`, `partials/{meta,navigation}.hbs`, `index.hbs` (`/`), `about.hbs`
+(`/about`) and `404.hbs`. All of these are required; the server exits at startup if one is missing.
+
+Requests flow through the global middleware, then: **template routes -> `/api/v1` API ->
+static files (`--static-root`, default `./public`) -> custom 404 page**.
+Unknown `/api/v1/*` paths return a JSON 404 instead of the HTML page.
 Access log -> stdout; all other logs -> stderr; both support `--log-format text|json`.
 
 ## Running on Render

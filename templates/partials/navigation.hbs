@@ -1,0 +1,10 @@
+<header class="site-header">
+  <nav class="container" aria-label="Main">
+    <a class="brand" href="/">{{app_name}}</a>
+    <ul>
+      <li><a href="/"{{#if (eq current_path "/")}} aria-current="page"{{/if}}>Home</a></li>
+      <li><a href="/about"{{#if (eq current_path "/about")}} aria-current="page"{{/if}}>About</a></li>
+      <li><a href="/api/v1/health">Health</a></li>
+    </ul>
+  </nav>
+</header>

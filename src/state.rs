@@ -7,7 +7,7 @@ use std::{
 
 use tokio::sync::Semaphore;
 
-use crate::config::Config;
+use crate::{config::Config, services::templates::Templates};
 
 /// Cheaply cloneable state shared across requests.
 #[derive(Clone)]
@@ -21,15 +21,18 @@ pub struct AppState {
     pub concurrency: Arc<Semaphore>,
     /// Configured size of `concurrency`.
     pub concurrency_limit: usize,
+    /// Loaded Handlebars templates.
+    pub templates: Templates,
 }
 
 impl AppState {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, templates: Templates) -> Self {
         Self {
             started_at: Instant::now(),
             ready: Arc::new(AtomicBool::new(true)),
             concurrency: Arc::new(Semaphore::new(config.max_concurrent_requests)),
             concurrency_limit: config.max_concurrent_requests,
+            templates,
         }
     }
 }
