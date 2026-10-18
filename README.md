@@ -42,3 +42,40 @@ Access log -> stdout; all other logs -> stderr; both support `--log-format text|
   If the chain is shorter than the depth, the socket address is used.
 * `GET /api/v1/ip` returns `{"ip": "...", "source": "cf-connecting-ip"}`.
 * Set `TRUST_PROXY_HEADERS=false` if the service is ever reachable without these proxies.
+
+## Markdown blog
+
+Posts are `*.md` files in `--blog-dir` (`BLOG_DIR`, default `./blog`), loaded once at
+startup (restart to pick up changes). Pages: `/` (5 latest), `/blog` (10 latest),
+`/blog/{createdAt date}/{slug}`; "Load more" uses `GET /api/v1/blog/posts?offset=&limit=`
+(JSON with `posts` plus server-rendered `html` cards; `limit` is capped at 50).
+
+All front-matter fields are optional and parsed leniently (a bad value logs a warning and
+falls back to its default):
+
+| Field | Default |
+|-------|---------|
+| `slug` | file name without extension (URL-safe, lower-cased) |
+| `title` | derived from the slug (`my-post` -> `My Post`) |
+| `excerpt` | first paragraph, capped at 160 characters |
+| `author` (string / list) | `Anonymous` |
+| `license` | `CC BY-SA` |
+| `createdAt` / `updatedAt` (ISO date or datetime; naive values are UTC) | file creation / modification time |
+| `keywords` (list or comma-separated string) | empty |
+| `category`, `serie`, `image`, `imageAlt`, `canonicalUrl` | empty |
+| `lang` | `en` |
+| `published` / `featured` | `true` / `false` |
+| `readingTime` | always computed (200 words/min, minimum 1); front-matter value ignored |
+
+Notes: unpublished posts are hidden everywhere, including their direct URL. `image` and
+`canonicalUrl` accept `http(s)` URLs or site paths only. Markdown HTML output is sanitized
+(no scripts, event handlers or `javascript:` URLs). Reference images with absolute paths
+(`/img/x.png`, served from `public/`). Filesystem dates are unreliable in Docker images
+(they reflect the build), so set `createdAt` explicitly for real posts.
+
+## UI
+
+Templates use [W3.CSS 5](https://www.w3schools.com/w3css/5/w3.css) loaded from w3schools.com
+(allowed in the CSP's `style-src`; remote `https:` images are allowed in `img-src`).
+Because inline scripts/styles are blocked by the CSP, behaviour lives in `public/js/` and
+custom CSS in `public/css/style.css`.
