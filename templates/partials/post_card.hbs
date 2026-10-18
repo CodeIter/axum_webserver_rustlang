@@ -1,0 +1,19 @@
+<article class="w3-card w3-white w3-margin-bottom post-card">
+  <div class="w3-row">
+    {{#if image}}
+    <div class="w3-col m4">
+      <a href="{{url}}"><img class="w3-image post-thumb" src="{{image}}" alt="{{image_alt}}" loading="lazy"></a>
+    </div>
+    {{/if}}
+    <div class="w3-col {{#if image}}m8{{else}}m12{{/if}} w3-container w3-padding-16">
+      {{#if featured}}<span class="w3-tag w3-amber w3-round">Featured</span>{{/if}}
+      {{#if category}}<span class="w3-tag w3-blue w3-round">{{category}}</span>{{/if}}
+      <h3><a class="post-title" href="{{url}}">{{title}}</a></h3>
+      <p class="w3-text-grey w3-small">
+        <time datetime="{{created_at}}">{{created_human}}</time> &middot; {{author}} &middot; {{reading_time}} min read
+      </p>
+      <p>{{excerpt}}</p>
+      <a href="{{url}}" class="w3-button w3-blue w3-small">Read more &raquo;</a>
+    </div>
+  </div>
+</article>
