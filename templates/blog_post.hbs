@@ -1,0 +1,55 @@
+<article class="w3-card w3-white w3-padding-large">
+  <p><a href="/blog">&laquo; All posts</a></p>
+
+  <header>
+    {{#if post.featured}}<span class="w3-tag w3-amber w3-round">Featured</span>{{/if}}
+    {{#if post.category}}<span class="w3-tag w3-blue w3-round">{{post.category}}</span>{{/if}}
+    <h1 class="w3-xxlarge">{{post.title}}</h1>
+    <p class="w3-text-grey">
+      By {{#each post.authors}}<strong>{{this}}</strong>{{#unless @last}}, {{/unless}}{{/each}}
+      &middot; <time datetime="{{post.created_at}}">{{post.created_human}}</time>
+      &middot; {{post.reading_time}} min read
+    </p>
+    {{#if post.image}}
+    <img class="w3-image post-hero" src="{{post.image}}" alt="{{post.image_alt}}">
+    {{/if}}
+  </header>
+
+  <div class="post-content w3-margin-top">
+    {{{post.html}}}
+  </div>
+
+  {{#if post.keywords}}
+  <p class="w3-margin-top">
+    {{#each post.keywords}}<span class="w3-tag w3-light-grey w3-border w3-round w3-margin-right w3-margin-bottom">{{this}}</span>{{/each}}
+  </p>
+  {{/if}}
+
+  {{#if series}}
+  <aside class="w3-panel w3-pale-green w3-leftbar w3-border-green" aria-labelledby="series-heading">
+    <h2 id="series-heading" class="w3-large">Series: {{series.name}}</h2>
+    <ol class="w3-ul">
+      {{#each series.posts}}
+      <li>{{#if current}}<strong>{{title}}</strong> (you are here){{else}}<a href="{{url}}">{{title}}</a>{{/if}}</li>
+      {{/each}}
+    </ol>
+  </aside>
+  {{/if}}
+
+  <section class="w3-panel w3-pale-blue w3-leftbar w3-border-blue" aria-labelledby="details-heading">
+    <h2 id="details-heading" class="w3-large">Post details</h2>
+    <div class="w3-row-padding">
+      <div class="w3-third"><p><strong>Author{{#if post.authors.[1]}}s{{/if}}</strong><br>{{post.author}}</p></div>
+      <div class="w3-third"><p><strong>Published</strong><br><time datetime="{{post.created_at}}">{{post.created_human}}</time></p></div>
+      <div class="w3-third"><p><strong>Updated</strong><br><time datetime="{{post.updated_at}}">{{post.updated_human}}</time></p></div>
+    </div>
+    <div class="w3-row-padding">
+      <div class="w3-third"><p><strong>Reading time</strong><br>{{post.reading_time}} min</p></div>
+      <div class="w3-third"><p><strong>Language</strong><br>{{post.lang}}</p></div>
+      <div class="w3-third"><p><strong>License</strong><br>{{post.license}}</p></div>
+    </div>
+    {{#if post.canonical_url}}
+    <p><strong>Originally published at</strong> <a href="{{post.canonical_url}}" rel="noopener">{{post.canonical_url}}</a></p>
+    {{/if}}
+  </section>
+</article>

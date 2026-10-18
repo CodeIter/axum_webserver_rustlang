@@ -1,10 +1,16 @@
-<header class="site-header">
-  <nav class="container" aria-label="Main">
-    <a class="brand" href="/">{{app_name}}</a>
-    <ul>
-      <li><a href="/"{{#if (eq current_path "/")}} aria-current="page"{{/if}}>Home</a></li>
-      <li><a href="/about"{{#if (eq current_path "/about")}} aria-current="page"{{/if}}>About</a></li>
-      <li><a href="/api/v1/health">Health</a></li>
-    </ul>
+<header>
+  <nav class="w3-bar w3-black" aria-label="Main">
+    <a href="/" class="w3-bar-item w3-button w3-padding-16 brand">{{app_name}}</a>
+    <a href="/"{{#if (eq current_path "/")}} aria-current="page"{{/if}} class="w3-bar-item w3-button w3-padding-16 w3-hide-small{{#if (eq current_path "/")}} w3-blue{{/if}}">Home</a>
+    <a href="/blog"{{#if (eq current_path "/blog")}} aria-current="page"{{/if}} class="w3-bar-item w3-button w3-padding-16 w3-hide-small{{#if (eq current_path "/blog")}} w3-blue{{/if}}">Blog</a>
+    <a href="/about"{{#if (eq current_path "/about")}} aria-current="page"{{/if}} class="w3-bar-item w3-button w3-padding-16 w3-hide-small{{#if (eq current_path "/about")}} w3-blue{{/if}}">About</a>
+    <a href="/api/v1/health" class="w3-bar-item w3-button w3-padding-16 w3-hide-small w3-right">Health</a>
+    <button type="button" id="nav-toggle" class="w3-bar-item w3-button w3-padding-16 w3-right w3-hide-large w3-hide-medium" aria-expanded="false" aria-controls="nav-mobile" aria-label="Toggle navigation menu">&#9776;</button>
   </nav>
+  <div id="nav-mobile" class="w3-bar-block w3-black w3-hide w3-hide-large w3-hide-medium">
+    <a href="/"{{#if (eq current_path "/")}} aria-current="page"{{/if}} class="w3-bar-item w3-button{{#if (eq current_path "/")}} w3-blue{{/if}}">Home</a>
+    <a href="/blog"{{#if (eq current_path "/blog")}} aria-current="page"{{/if}} class="w3-bar-item w3-button{{#if (eq current_path "/blog")}} w3-blue{{/if}}">Blog</a>
+    <a href="/about"{{#if (eq current_path "/about")}} aria-current="page"{{/if}} class="w3-bar-item w3-button{{#if (eq current_path "/about")}} w3-blue{{/if}}">About</a>
+    <a href="/api/v1/health" class="w3-bar-item w3-button">Health</a>
+  </div>
 </header>

@@ -1,0 +1,7 @@
+{{#if has_more}}
+<div class="w3-center w3-margin-bottom">
+  <button type="button" id="load-more" class="w3-button w3-blue w3-large" data-endpoint="/api/v1/blog/posts" data-target="post-list" data-offset="{{next_offset}}" data-limit="{{page_size}}">Load more</button>
+  <p id="load-more-status" class="w3-small w3-text-grey" role="status" aria-live="polite"></p>
+  <noscript><a class="w3-button w3-border" href="/blog">Browse all posts</a></noscript>
+</div>
+{{/if}}
