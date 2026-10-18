@@ -22,12 +22,16 @@ pub enum ApiError {
     /// The client sent an invalid request (`400`).
     #[error("{0}")]
     BadRequest(String),
+    /// Unexpected failure; details are logged, never sent to the client (`500`).
+    #[error("internal server error")]
+    Internal,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
             Self::BadRequest(msg) => json_error(StatusCode::BAD_REQUEST, msg),
+            Self::Internal => json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal server error"),
         }
     }
 }

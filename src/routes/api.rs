@@ -9,7 +9,7 @@ use axum::{
 
 use crate::{
     error::json_error,
-    handlers::{generate, redirect, request_info, system},
+    handlers::{blog, generate, redirect, request_info, system},
     middleware::headers,
     state::AppState,
 };
@@ -26,6 +26,7 @@ pub fn router() -> Router<AppState> {
         .route("/ready", get(system::ready))
         .route("/health", get(system::health))
         .route("/ip", get(system::client_ip))
+        .route("/blog/posts", get(blog::posts))
         .route("/http/headers", get(request_info::headers))
         .route("/http/xff", get(request_info::xff))
         .route("/number/{min}/{max}/{quantity}", get(generate::number))

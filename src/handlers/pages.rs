@@ -8,10 +8,13 @@ use axum::{
 use serde_json::{json, Value};
 use tracing::error;
 
-use crate::{services::templates::Templates, state::AppState};
+use crate::{handlers::blog, services::templates::Templates, state::AppState};
+
+/// Number of posts shown on the home page.
+const HOME_PAGE_SIZE: usize = 5;
 
 /// Renders `page` with `data`, mapping failures to a bare `500`.
-fn render(templates: &Templates, status: StatusCode, page: &str, data: Value) -> Response {
+pub fn render(templates: &Templates, status: StatusCode, page: &str, data: Value) -> Response {
     match templates.render_page(page, data) {
         Ok(html) => (status, Html(html)).into_response(),
         Err(err) => {
@@ -22,8 +25,12 @@ fn render(templates: &Templates, status: StatusCode, page: &str, data: Value) ->
 }
 
 /// `GET /`
+///
+/// Shows the latest [`HOME_PAGE_SIZE`] posts; "Load more" fetches the rest.
 pub async fn index(State(state): State<AppState>) -> Response {
-    render(&state.templates, StatusCode::OK, "index", json!({ "title": "Home", "current_path": "/" }))
+    let listing = state.blog.listing(0, HOME_PAGE_SIZE);
+    let data = blog::listing_context("Home", "/", &listing);
+    render(&state.templates, StatusCode::OK, "index", data)
 }
 
 /// `GET /about`

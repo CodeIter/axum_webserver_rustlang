@@ -25,7 +25,7 @@ mod shutdown;
 mod state;
 
 use config::Config;
-use services::templates::Templates;
+use services::{blog::Blog, templates::Templates};
 use state::AppState;
 use tokio::net::TcpListener;
 use tracing::{error, info};
@@ -42,7 +42,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     });
 
-    let state = AppState::new(&config, templates);
+    // A missing blog directory only logs a warning: the site still works.
+    let blog = Blog::load(&config.blog_dir);
+
+    let state = AppState::new(&config, templates, blog);
     let app = app::build(&config, state.clone());
 
     let listener = TcpListener::bind(config.socket_addr()).await?;
@@ -50,6 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         addr = %listener.local_addr()?,
         static_root = %config.static_root.display(),
         templates_dir = %config.templates_dir.display(),
+        blog_dir = %config.blog_dir.display(),
         "server listening"
     );
 

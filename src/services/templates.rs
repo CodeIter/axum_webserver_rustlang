@@ -22,8 +22,13 @@ const REQUIRED: &[&str] = &[
     LAYOUT,
     "partials/meta",
     "partials/navigation",
+    "partials/post_card",
+    "partials/post_cards",
+    "partials/load_more",
     "index",
     "about",
+    "blog",
+    "blog_post",
     "404",
 ];
 const LAYOUT: &str = "layouts/layout";
@@ -65,6 +70,11 @@ impl Templates {
             return Err(TemplateError::Missing(missing));
         }
         Ok(Self { engine: Arc::new(engine) })
+    }
+
+    /// Renders a template (typically a partial) *without* the layout.
+    pub fn render_fragment(&self, name: &str, data: &Value) -> Result<String, RenderError> {
+        self.engine.render(name, data)
     }
 
     /// Renders `page` inside the main layout.

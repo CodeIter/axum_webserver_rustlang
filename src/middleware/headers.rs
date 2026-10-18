@@ -18,7 +18,8 @@ const SECURITY_HEADERS: &[(&str, &str)] = &[
     ("referrer-policy", "no-referrer"),
     (
         "content-security-policy",
-        "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+        "default-src 'self'; style-src 'self' https://www.w3schools.com; img-src 'self' https: data:; \
+         base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
     ),
     // Ignored over plain HTTP; effective behind TLS termination.
     ("strict-transport-security", "max-age=31536000; includeSubDomains"),

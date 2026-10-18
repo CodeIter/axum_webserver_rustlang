@@ -26,6 +26,7 @@ pub mod defaults {
     pub const REQUEST_TIMEOUT_SECS: u64 = 30;
     pub const STATIC_ROOT: &str = "./public";
     pub const TEMPLATES_DIR: &str = "./templates";
+    pub const BLOG_DIR: &str = "./blog";
     pub const STATIC_INDEX_FILE: &str = "index.html";
     pub const RATE_LIMIT_MAX_REQUESTS: u32 = 100;
     pub const RATE_LIMIT_WINDOW_SECS: u64 = 60;
@@ -97,6 +98,10 @@ pub struct Config {
     /// Directory containing Handlebars templates (layouts/, partials/, pages).
     #[arg(long, env = "TEMPLATES_DIR", default_value = defaults::TEMPLATES_DIR)]
     pub templates_dir: PathBuf,
+
+    /// Directory containing Markdown blog posts (`*.md` with YAML front-matter).
+    #[arg(long, env = "BLOG_DIR", default_value = defaults::BLOG_DIR)]
+    pub blog_dir: PathBuf,
 
     /// Directory served at `/`.
     #[arg(long, env = "STATIC_ROOT", default_value = defaults::STATIC_ROOT)]
