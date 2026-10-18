@@ -25,7 +25,7 @@ Run `cargo run -- --help` for all options; see `.env.example` for env names.
 
 Handlebars templates live in `--templates-dir` (`TEMPLATES_DIR`, default `./templates`):
 `layouts/layout.hbs`, `partials/{meta,navigation}.hbs`, `index.hbs` (`/`), `about.hbs`
-(`/about`) and `404.hbs`. All of these are required; the server exits at startup if one is missing.
+(`/about`), `hello_world.hbs` (`/hello/world`, wrapped in its own `layouts/layout_hello.hbs`) and `404.hbs`. All of these are required; the server exits at startup if one is missing.
 
 Requests flow through the global middleware, then: **template routes -> `/api/v1` API ->
 static files (`--static-root`, default `./public`) -> custom 404 page**.

@@ -7,11 +7,12 @@ use crate::{
     state::AppState,
 };
 
-/// `/`, `/about`, `/blog` and `/blog/{date}/{slug}`, rendered from Handlebars templates.
+/// `/`, `/about`, `/hello/world`, `/blog` and `/blog/{date}/{slug}`, rendered from Handlebars templates.
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(pages::index))
         .route("/about", get(pages::about))
+        .route("/hello/world", get(pages::hello_world))
         .route("/blog", get(blog::index))
         .route("/blog/{date}/{slug}", get(blog::post))
 }

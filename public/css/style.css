@@ -20,3 +20,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid #ff9800; outline-offs
 .post-content blockquote { margin-left: 0; padding: .2rem 1rem; border-left: 4px solid #2196f3; background: #fafafa; }
 .post-content table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
 .post-content th, .post-content td { border: 1px solid #ddd; padding: .4rem .7rem; }
+
+/* Dedicated "hello" layout: content centred in the viewport. */
+.hello-body { min-height: 100vh; display: flex; flex-direction: column; }
+.hello-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }

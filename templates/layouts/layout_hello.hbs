@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  {{> partials/meta}}
+  <title>{{title}} | {{app_name}}</title>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="w3-black hello-body">
+  <main class="w3-content w3-center w3-padding-64 hello-main">
+    {{{body}}}
+  </main>
+  <footer class="w3-container w3-center w3-padding-16">
+    <small>{{app_name}} v{{version}}</small>
+  </footer>
+</body>
+</html>

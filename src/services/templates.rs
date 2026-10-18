@@ -19,7 +19,8 @@ use serde_json::{json, Map, Value};
 
 /// Templates that must exist for the server to start.
 const REQUIRED: &[&str] = &[
-    LAYOUT,
+    DEFAULT_LAYOUT,
+    HELLO_LAYOUT,
     "partials/meta",
     "partials/navigation",
     "partials/post_card",
@@ -27,11 +28,15 @@ const REQUIRED: &[&str] = &[
     "partials/load_more",
     "index",
     "about",
+    "hello_world",
     "blog",
     "blog_post",
     "404",
 ];
-const LAYOUT: &str = "layouts/layout";
+/// Layout used by every page unless another one is requested.
+pub const DEFAULT_LAYOUT: &str = "layouts/layout";
+/// Dedicated layout of the `/hello/world` page.
+pub const HELLO_LAYOUT: &str = "layouts/layout_hello";
 const APP_NAME: &str = "Axum Server";
 
 /// Failure while loading templates at startup.
@@ -77,12 +82,12 @@ impl Templates {
         self.engine.render(name, data)
     }
 
-    /// Renders `page` inside the main layout.
+    /// Renders `page` and wraps it in `layout` (e.g. [`DEFAULT_LAYOUT`]).
     ///
     /// `data` should be a JSON object (typically with `title` and
     /// `current_path`); `app_name` and `version` are added automatically.
     /// Values are HTML-escaped by default.
-    pub fn render_page(&self, page: &str, data: Value) -> Result<String, RenderError> {
+    pub fn render_page_in(&self, layout: &str, page: &str, data: Value) -> Result<String, RenderError> {
         let mut context: Map<String, Value> = match data {
             Value::Object(map) => map,
             _ => Map::new(),
@@ -92,7 +97,7 @@ impl Templates {
 
         let body = self.engine.render(page, &context)?;
         context.insert("body".into(), Value::String(body));
-        self.engine.render(LAYOUT, &context)
+        self.engine.render(layout, &context)
     }
 }
 
@@ -108,7 +113,7 @@ mod tests {
     #[test]
     fn renders_page_inside_layout_with_partials() {
         let html = templates()
-            .render_page("index", json!({ "title": "Home", "current_path": "/" }))
+            .render_page_in(DEFAULT_LAYOUT, "index", json!({ "title": "Home", "current_path": "/" }))
             .unwrap();
         assert!(html.contains("<!doctype html>"));
         assert!(html.contains("<meta charset=\"utf-8\">")); // meta partial
@@ -120,7 +125,7 @@ mod tests {
     #[test]
     fn marks_current_navigation_item() {
         let html = templates()
-            .render_page("about", json!({ "title": "About", "current_path": "/about" }))
+            .render_page_in(DEFAULT_LAYOUT, "about", json!({ "title": "About", "current_path": "/about" }))
             .unwrap();
         assert!(html.contains("href=\"/about\" aria-current=\"page\""));
         assert!(!html.contains("href=\"/\" aria-current=\"page\""));
@@ -129,10 +134,21 @@ mod tests {
     #[test]
     fn escapes_untrusted_values() {
         let html = templates()
-            .render_page("404", json!({ "title": "<script>x</script>", "current_path": "" }))
+            .render_page_in(DEFAULT_LAYOUT, "404", json!({ "title": "<script>x</script>", "current_path": "" }))
             .unwrap();
         assert!(!html.contains("<script>x</script>"));
         assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn hello_page_uses_its_dedicated_layout() {
+        let t = templates();
+        let data = json!({ "title": "Hello World", "current_path": "/hello/world" });
+        let hello = t.render_page_in(HELLO_LAYOUT, "hello_world", data.clone()).unwrap();
+        assert!(hello.contains("Hello, World!") && hello.contains("hello-body"));
+        assert!(!hello.contains("<nav")); // no site navigation in this layout
+        let default = t.render_page_in(DEFAULT_LAYOUT, "hello_world", data).unwrap();
+        assert!(default.contains("<nav") && !default.contains("hello-body"));
     }
 
     #[test]

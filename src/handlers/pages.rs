@@ -8,14 +8,29 @@ use axum::{
 use serde_json::{json, Value};
 use tracing::error;
 
-use crate::{handlers::blog, services::templates::Templates, state::AppState};
+use crate::{
+    handlers::blog,
+    services::templates::{Templates, DEFAULT_LAYOUT, HELLO_LAYOUT},
+    state::AppState,
+};
 
 /// Number of posts shown on the home page.
 const HOME_PAGE_SIZE: usize = 5;
 
 /// Renders `page` with `data`, mapping failures to a bare `500`.
 pub fn render(templates: &Templates, status: StatusCode, page: &str, data: Value) -> Response {
-    match templates.render_page(page, data) {
+    render_in(templates, DEFAULT_LAYOUT, status, page, data)
+}
+
+/// Like [`render`], but inside a specific `layout`.
+pub fn render_in(
+    templates: &Templates,
+    layout: &str,
+    status: StatusCode,
+    page: &str,
+    data: Value,
+) -> Response {
+    match templates.render_page_in(layout, page, data) {
         Ok(html) => (status, Html(html)).into_response(),
         Err(err) => {
             error!(page, %err, "template rendering failed");
@@ -36,6 +51,12 @@ pub async fn index(State(state): State<AppState>) -> Response {
 /// `GET /about`
 pub async fn about(State(state): State<AppState>) -> Response {
     render(&state.templates, StatusCode::OK, "about", json!({ "title": "About", "current_path": "/about" }))
+}
+
+/// `GET /hello/world` - rendered with its own layout (`layouts/layout_hello.hbs`).
+pub async fn hello_world(State(state): State<AppState>) -> Response {
+    let data = json!({ "title": "Hello World", "current_path": "/hello/world" });
+    render_in(&state.templates, HELLO_LAYOUT, StatusCode::OK, "hello_world", data)
 }
 
 /// The custom `404 Not Found` page; shared by every "not found" path.
