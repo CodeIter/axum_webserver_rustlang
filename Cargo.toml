@@ -15,9 +15,13 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+ammonia = "4"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 handlebars = { version = "6", features = ["dir_source"] }
 rand = "0.9"
 percent-encoding = "2"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+serde_yaml_ng = "0.10"
 thiserror = "2"
 
 [profile.release]
