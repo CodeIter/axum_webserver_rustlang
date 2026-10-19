@@ -1,0 +1,63 @@
+# Production release: pushing a tag such as `v1.2.3` validates the code and
+# publishes a GitHub Release with the compiled Linux binary.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Validate and publish release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Build
+        run: cargo build --release --locked
+
+      # The binary needs `templates/` at runtime, so ship a bundle next to the
+      # bare binary. A checksum file covers both.
+      - name: Package
+        run: |
+          mkdir -p dist/axum-server
+          cp target/release/axum-server dist/axum-server/
+          cp -r templates public blog README.md dist/axum-server/
+          tar -C dist -czf dist/axum-server-linux-x86_64.tar.gz axum-server
+          cp target/release/axum-server dist/axum-server-linux-x86_64
+          (cd dist && sha256sum axum-server-linux-x86_64 axum-server-linux-x86_64.tar.gz > sha256sums.txt)
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/axum-server-linux-x86_64 \
+            dist/axum-server-linux-x86_64.tar.gz \
+            dist/sha256sums.txt \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

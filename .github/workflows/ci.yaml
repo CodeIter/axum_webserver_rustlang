@@ -1,0 +1,73 @@
+# Continuous integration for `main`.
+#
+# Every push to `main` is validated (fmt, test, clippy, build). When everything
+# passes, a pre-release is published with the compiled Linux binary.
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+# Never interrupt a run that may be in the middle of publishing a release.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Validate and publish pre-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the pre-release and its tag
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Build
+        run: cargo build --release --locked
+
+      # The binary needs `templates/` at runtime, so ship a bundle next to the
+      # bare binary. A checksum file covers both.
+      - name: Package
+        run: |
+          mkdir -p dist/axum-server
+          cp target/release/axum-server dist/axum-server/
+          cp -r templates public blog README.md dist/axum-server/
+          tar -C dist -czf dist/axum-server-linux-x86_64.tar.gz axum-server
+          cp target/release/axum-server dist/axum-server-linux-x86_64
+          (cd dist && sha256sum axum-server-linux-x86_64 axum-server-linux-x86_64.tar.gz > sha256sums.txt)
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="pre-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          gh release create "$TAG" \
+            dist/axum-server-linux-x86_64 \
+            dist/axum-server-linux-x86_64.tar.gz \
+            dist/sha256sums.txt \
+            --target "$GITHUB_SHA" \
+            --title "Pre-release $TAG" \
+            --notes "Automated build of commit ${GITHUB_SHA} from \`main\`." \
+            --generate-notes \
+            --prerelease
