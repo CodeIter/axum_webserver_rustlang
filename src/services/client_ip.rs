@@ -97,19 +97,31 @@ fn xff_ip(headers: &HeaderMap, depth: usize) -> Option<IpAddr> {
 
 /// Resolves the client IP according to `policy`; see the module docs.
 pub fn resolve(headers: &HeaderMap, peer: IpAddr, policy: ClientIpPolicy) -> ClientIp {
-    let socket = ClientIp { ip: peer.to_canonical(), source: IpSource::Socket };
+    let socket = ClientIp {
+        ip: peer.to_canonical(),
+        source: IpSource::Socket,
+    };
     if !policy.trust_proxy_headers {
         return socket;
     }
 
     if let Some(ip) = header_ip(headers, "cf-connecting-ip") {
-        return ClientIp { ip, source: IpSource::CfConnectingIp };
+        return ClientIp {
+            ip,
+            source: IpSource::CfConnectingIp,
+        };
     }
     if let Some(ip) = header_ip(headers, "true-client-ip") {
-        return ClientIp { ip, source: IpSource::TrueClientIp };
+        return ClientIp {
+            ip,
+            source: IpSource::TrueClientIp,
+        };
     }
     if let Some(ip) = xff_ip(headers, policy.xff_proxy_depth.max(1)) {
-        return ClientIp { ip, source: IpSource::XForwardedFor };
+        return ClientIp {
+            ip,
+            source: IpSource::XForwardedFor,
+        };
     }
     socket
 }
@@ -118,7 +130,10 @@ pub fn resolve(headers: &HeaderMap, peer: IpAddr, policy: ClientIpPolicy) -> Cli
 mod tests {
     use super::*;
 
-    const POLICY: ClientIpPolicy = ClientIpPolicy { trust_proxy_headers: true, xff_proxy_depth: 3 };
+    const POLICY: ClientIpPolicy = ClientIpPolicy {
+        trust_proxy_headers: true,
+        xff_proxy_depth: 3,
+    };
     const PEER: &str = "10.0.0.1";
 
     fn headers(pairs: &[(&'static str, &str)]) -> HeaderMap {
@@ -140,44 +155,80 @@ mod tests {
             ("true-client-ip", "203.0.113.6"),
             ("x-forwarded-for", "203.0.113.7, 1.1.1.1, 2.2.2.2"),
         ]);
-        assert_eq!((r.ip.to_string().as_str(), r.source), ("203.0.113.5", IpSource::CfConnectingIp));
+        assert_eq!(
+            (r.ip.to_string().as_str(), r.source),
+            ("203.0.113.5", IpSource::CfConnectingIp)
+        );
     }
 
     #[test]
     fn invalid_cf_header_falls_through_to_true_client_ip() {
-        let r = run(&[("cf-connecting-ip", "not-an-ip"), ("true-client-ip", "203.0.113.6")]);
-        assert_eq!((r.ip.to_string().as_str(), r.source), ("203.0.113.6", IpSource::TrueClientIp));
+        let r = run(&[
+            ("cf-connecting-ip", "not-an-ip"),
+            ("true-client-ip", "203.0.113.6"),
+        ]);
+        assert_eq!(
+            (r.ip.to_string().as_str(), r.source),
+            ("203.0.113.6", IpSource::TrueClientIp)
+        );
     }
 
     #[test]
     fn xff_counts_from_the_right_and_ignores_spoofed_prefix() {
         // The client sent "6.6.6.6, 7.7.7.7"; Render/Cloudflare appended the rest.
-        let r = run(&[("x-forwarded-for", "6.6.6.6, 7.7.7.7, 203.0.113.9, 172.70.0.1, 10.1.1.1")]);
-        assert_eq!((r.ip.to_string().as_str(), r.source), ("203.0.113.9", IpSource::XForwardedFor));
+        let r = run(&[(
+            "x-forwarded-for",
+            "6.6.6.6, 7.7.7.7, 203.0.113.9, 172.70.0.1, 10.1.1.1",
+        )]);
+        assert_eq!(
+            (r.ip.to_string().as_str(), r.source),
+            ("203.0.113.9", IpSource::XForwardedFor)
+        );
     }
 
     #[test]
     fn xff_spanning_multiple_header_lines() {
-        let r = run(&[("x-forwarded-for", "203.0.113.9"), ("x-forwarded-for", "172.70.0.1, 10.1.1.1")]);
+        let r = run(&[
+            ("x-forwarded-for", "203.0.113.9"),
+            ("x-forwarded-for", "172.70.0.1, 10.1.1.1"),
+        ]);
         assert_eq!(r.ip.to_string(), "203.0.113.9");
     }
 
     #[test]
     fn short_xff_chain_falls_back_to_socket() {
         let r = run(&[("x-forwarded-for", "172.70.0.1, 10.1.1.1")]);
-        assert_eq!((r.ip.to_string().as_str(), r.source), (PEER, IpSource::Socket));
+        assert_eq!(
+            (r.ip.to_string().as_str(), r.source),
+            (PEER, IpSource::Socket)
+        );
     }
 
     #[test]
     fn ignores_headers_when_not_trusted() {
-        let policy = ClientIpPolicy { trust_proxy_headers: false, ..POLICY };
-        let r = resolve(&headers(&[("cf-connecting-ip", "203.0.113.5")]), PEER.parse().unwrap(), policy);
+        let policy = ClientIpPolicy {
+            trust_proxy_headers: false,
+            ..POLICY
+        };
+        let r = resolve(
+            &headers(&[("cf-connecting-ip", "203.0.113.5")]),
+            PEER.parse().unwrap(),
+            policy,
+        );
         assert_eq!(r.source, IpSource::Socket);
     }
 
     #[test]
     fn supports_ipv6_and_ports() {
-        assert_eq!(run(&[("cf-connecting-ip", "2001:db8::1")]).ip.to_string(), "2001:db8::1");
-        assert_eq!(run(&[("cf-connecting-ip", "203.0.113.5:4711")]).ip.to_string(), "203.0.113.5");
+        assert_eq!(
+            run(&[("cf-connecting-ip", "2001:db8::1")]).ip.to_string(),
+            "2001:db8::1"
+        );
+        assert_eq!(
+            run(&[("cf-connecting-ip", "203.0.113.5:4711")])
+                .ip
+                .to_string(),
+            "203.0.113.5"
+        );
     }
 }

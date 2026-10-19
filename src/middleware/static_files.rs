@@ -33,7 +33,9 @@ pub struct StaticGuard {
 
 /// Returns `true` if any path segment starts with a dot (includes `.` and `..`).
 fn touches_dotfile(decoded_path: &str) -> bool {
-    decoded_path.split('/').any(|segment| segment.starts_with('.'))
+    decoded_path
+        .split('/')
+        .any(|segment| segment.starts_with('.'))
 }
 
 /// Replaces the request path, preserving the query string.
@@ -58,7 +60,9 @@ pub async fn static_guard(
     next: Next,
 ) -> Response {
     let raw_path = request.uri().path().to_owned();
-    let decoded = percent_decode_str(&raw_path).decode_utf8_lossy().into_owned();
+    let decoded = percent_decode_str(&raw_path)
+        .decode_utf8_lossy()
+        .into_owned();
 
     if guard.dotfiles != DotfilePolicy::Allow && touches_dotfile(&decoded) {
         return match guard.dotfiles {

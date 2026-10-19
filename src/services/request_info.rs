@@ -80,13 +80,22 @@ mod tests {
     fn repeated_headers_become_arrays() {
         let out = collect_headers(&map(&[("accept", "a"), ("x-test", "1"), ("x-test", "2")]));
         assert_eq!(out["accept"], HeaderValues::One("a".into()));
-        assert_eq!(out["x-test"], HeaderValues::Many(vec!["1".into(), "2".into()]));
+        assert_eq!(
+            out["x-test"],
+            HeaderValues::Many(vec!["1".into(), "2".into()])
+        );
     }
 
     #[test]
     fn forwarding_headers_join_lines_and_report_absence() {
-        let f = forwarding_headers(&map(&[("x-forwarded-for", "1.1.1.1"), ("x-forwarded-for", "2.2.2.2, 3.3.3.3")]));
-        assert_eq!(f.x_forwarded_for.as_deref(), Some("1.1.1.1, 2.2.2.2, 3.3.3.3"));
+        let f = forwarding_headers(&map(&[
+            ("x-forwarded-for", "1.1.1.1"),
+            ("x-forwarded-for", "2.2.2.2, 3.3.3.3"),
+        ]));
+        assert_eq!(
+            f.x_forwarded_for.as_deref(),
+            Some("1.1.1.1, 2.2.2.2, 3.3.3.3")
+        );
         assert_eq!(f.cf_connecting_ip, None);
         assert_eq!(f.true_client_ip, None);
     }

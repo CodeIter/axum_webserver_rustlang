@@ -63,7 +63,11 @@ impl Post {
 
     /// Site-relative URL: `/blog/{createdatdate}/{slug}`.
     pub fn url(&self) -> String {
-        format!("/blog/{}/{}", self.url_date(), utf8_percent_encode(&self.slug, PATH_SEGMENT))
+        format!(
+            "/blog/{}/{}",
+            self.url_date(),
+            utf8_percent_encode(&self.slug, PATH_SEGMENT)
+        )
     }
 
     /// Builds a post from raw file content.
@@ -89,7 +93,11 @@ impl Post {
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| {
                 let s = slugify(stem);
-                if s.is_empty() { "post".to_owned() } else { s }
+                if s.is_empty() {
+                    "post".to_owned()
+                } else {
+                    s
+                }
             });
 
         let post = Self {
@@ -241,7 +249,11 @@ impl Blog {
 
     /// Sorts newest first and indexes by `(date, slug)`; duplicates are dropped.
     pub fn from_posts(mut posts: Vec<Post>) -> Self {
-        posts.sort_by(|a, b| b.created_at.cmp(&a.created_at).then_with(|| a.slug.cmp(&b.slug)));
+        posts.sort_by(|a, b| {
+            b.created_at
+                .cmp(&a.created_at)
+                .then_with(|| a.slug.cmp(&b.slug))
+        });
         let mut by_url = HashMap::new();
         let mut unique = Vec::with_capacity(posts.len());
         for post in posts {
@@ -253,7 +265,15 @@ impl Blog {
             by_url.insert(key, unique.len());
             unique.push(post);
         }
-        Self { posts: unique, by_url }
+        Self {
+            posts: unique,
+            by_url,
+        }
+    }
+
+    /// Published posts, newest first.
+    pub fn posts(&self) -> &[Post] {
+        &self.posts
     }
 
     pub fn len(&self) -> usize {
@@ -278,7 +298,10 @@ impl Blog {
             limit,
             has_more: end < total,
             next_offset: end,
-            posts: self.posts[start..end].iter().map(|p| p.view(false)).collect(),
+            posts: self.posts[start..end]
+                .iter()
+                .map(|p| p.view(false))
+                .collect(),
         }
     }
 
@@ -291,7 +314,9 @@ impl Blog {
 }
 
 fn collect_markdown_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(dir) else { return };
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
         let hidden = entry.file_name().to_string_lossy().starts_with('.');
@@ -314,8 +339,14 @@ fn collect_markdown_files(dir: &Path, out: &mut Vec<PathBuf>) {
 /// creation time; the modification time (or "now") is used as a fallback.
 fn file_times(path: &Path) -> (DateTime<Utc>, DateTime<Utc>) {
     let meta = fs::metadata(path).ok();
-    let modified = meta.as_ref().and_then(|m| m.modified().ok()).unwrap_or_else(SystemTime::now);
-    let created = meta.as_ref().and_then(|m| m.created().ok()).unwrap_or(modified);
+    let modified = meta
+        .as_ref()
+        .and_then(|m| m.modified().ok())
+        .unwrap_or_else(SystemTime::now);
+    let created = meta
+        .as_ref()
+        .and_then(|m| m.created().ok())
+        .unwrap_or(modified);
     (created.into(), modified.into())
 }
 
@@ -350,7 +381,11 @@ pub fn title_from_slug(slug: &str) -> String {
 
 /// First paragraph, capped at [`EXCERPT_CHARS`]; falls back to the start of the text.
 fn make_excerpt(first_paragraph: &str, plain_text: &str) -> String {
-    let source = if first_paragraph.is_empty() { plain_text } else { first_paragraph };
+    let source = if first_paragraph.is_empty() {
+        plain_text
+    } else {
+        first_paragraph
+    };
     if source.chars().count() <= EXCERPT_CHARS {
         return source.to_owned();
     }
@@ -360,7 +395,10 @@ fn make_excerpt(first_paragraph: &str, plain_text: &str) -> String {
         Some(i) if i > EXCERPT_CHARS / 2 => &cut[..i],
         _ => &cut,
     };
-    format!("{}…", trimmed.trim_end_matches(|c: char| c.is_ascii_punctuation() || c.is_whitespace()))
+    format!(
+        "{}…",
+        trimmed.trim_end_matches(|c: char| c.is_ascii_punctuation() || c.is_whitespace())
+    )
 }
 
 #[cfg(test)]
@@ -373,7 +411,14 @@ mod tests {
     }
 
     fn build(stem: &str, raw: &str) -> Post {
-        Post::from_source(stem, raw, ts(2024, 1, 1), ts(2024, 2, 2), &markdown::sanitizer()).0
+        Post::from_source(
+            stem,
+            raw,
+            ts(2024, 1, 1),
+            ts(2024, 2, 2),
+            &markdown::sanitizer(),
+        )
+        .0
     }
 
     #[test]
@@ -384,9 +429,15 @@ mod tests {
         assert_eq!(p.excerpt, "Hello world.");
         assert_eq!(p.authors, vec!["Anonymous"]);
         assert_eq!(p.license, "CC BY-SA");
-        assert_eq!((p.created_at, p.updated_at), (ts(2024, 1, 1), ts(2024, 2, 2)));
+        assert_eq!(
+            (p.created_at, p.updated_at),
+            (ts(2024, 1, 1), ts(2024, 2, 2))
+        );
         assert!(p.keywords.is_empty() && p.category.is_empty() && p.serie.is_empty());
-        assert_eq!((p.lang.as_str(), p.image.as_str(), p.image_alt.as_str()), ("en", "", ""));
+        assert_eq!(
+            (p.lang.as_str(), p.image.as_str(), p.image_alt.as_str()),
+            ("en", "", "")
+        );
         assert_eq!((p.published, p.featured), (true, false));
         assert!(p.canonical_url.is_empty());
         assert_eq!(p.reading_time, 1);
@@ -428,12 +479,23 @@ mod tests {
             .collect();
         let blog = Blog::from_posts(posts);
         let first = blog.listing(0, 5);
-        assert_eq!((first.total, first.posts.len(), first.has_more, first.next_offset), (7, 5, true, 5));
+        assert_eq!(
+            (
+                first.total,
+                first.posts.len(),
+                first.has_more,
+                first.next_offset
+            ),
+            (7, 5, true, 5)
+        );
         assert_eq!(first.posts[0].slug, "p7");
         let rest = blog.listing(5, 5);
         assert_eq!((rest.posts.len(), rest.has_more), (2, false));
         assert!(blog.listing(99, 5).posts.is_empty());
-        assert_eq!(blog.series("s").first().map(|p| p.slug.as_str()), Some("p1"));
+        assert_eq!(
+            blog.series("s").first().map(|p| p.slug.as_str()),
+            Some("p1")
+        );
         assert!(blog.get("2024-01-03", "p3").is_some());
         assert!(blog.get("2024-01-04", "p3").is_none());
     }

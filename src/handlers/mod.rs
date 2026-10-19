@@ -5,4 +5,5 @@ pub mod generate;
 pub mod pages;
 pub mod redirect;
 pub mod request_info;
+pub mod seo;
 pub mod system;

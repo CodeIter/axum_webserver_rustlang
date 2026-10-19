@@ -143,7 +143,9 @@ fn date(map: &Mapping, key: &str, warnings: &mut Vec<String>) -> Option<DateTime
     let raw = text(map, key)?;
     let parsed = parse_datetime(&raw);
     if parsed.is_none() {
-        warnings.push(format!("`{key}` is not an ISO date or datetime ({raw:?}); using the file time"));
+        warnings.push(format!(
+            "`{key}` is not an ISO date or datetime ({raw:?}); using the file time"
+        ));
     }
     parsed
 }
@@ -154,7 +156,12 @@ pub fn parse_datetime(input: &str) -> Option<DateTime<Utc>> {
     if let Ok(dt) = DateTime::parse_from_rfc3339(input) {
         return Some(dt.with_timezone(&Utc));
     }
-    for fmt in ["%Y-%m-%dT%H:%M:%S%.f", "%Y-%m-%d %H:%M:%S%.f", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"] {
+    for fmt in [
+        "%Y-%m-%dT%H:%M:%S%.f",
+        "%Y-%m-%d %H:%M:%S%.f",
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%d %H:%M",
+    ] {
         if let Ok(naive) = NaiveDateTime::parse_from_str(input, fmt) {
             return Some(Utc.from_utc_datetime(&naive));
         }
@@ -194,7 +201,9 @@ fn url_or_path(map: &Mapping, key: &str, warnings: &mut Vec<String>) -> Option<S
     let raw = text(map, key)?;
     let normalized = normalize_url_or_path(&raw);
     if normalized.is_none() {
-        warnings.push(format!("`{key}` must be an http(s) URL or a path ({raw:?}); ignoring it"));
+        warnings.push(format!(
+            "`{key}` must be an http(s) URL or a path ({raw:?}); ignoring it"
+        ));
     }
     normalized
 }
@@ -224,7 +233,10 @@ mod tests {
         assert_eq!(fm.keywords, Some(vec!["rust".into(), "web".into()]));
         assert_eq!(fm.featured, Some(true));
         assert_eq!(fm.published, None);
-        assert_eq!(fm.created_at.unwrap().to_rfc3339(), "2024-03-01T00:00:00+00:00");
+        assert_eq!(
+            fm.created_at.unwrap().to_rfc3339(),
+            "2024-03-01T00:00:00+00:00"
+        );
         assert!(fm.updated_at.is_none() && fm.image.is_none());
         assert_eq!(warnings.len(), 3);
     }
@@ -245,8 +257,14 @@ mod tests {
 
     #[test]
     fn url_normalization() {
-        assert_eq!(normalize_url_or_path("img/a.png").as_deref(), Some("/img/a.png"));
-        assert_eq!(normalize_url_or_path("https://x.io/a").as_deref(), Some("https://x.io/a"));
+        assert_eq!(
+            normalize_url_or_path("img/a.png").as_deref(),
+            Some("/img/a.png")
+        );
+        assert_eq!(
+            normalize_url_or_path("https://x.io/a").as_deref(),
+            Some("https://x.io/a")
+        );
         assert!(normalize_url_or_path("//evil.com").is_none());
         assert!(normalize_url_or_path("data:text/html,x").is_none());
     }

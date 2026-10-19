@@ -37,7 +37,9 @@ pub fn init(format: LogFormat, level: LogLevel) {
     let max_level = level.as_tracing();
 
     let access = fmt_layer(format, io::stdout, io::stdout().is_terminal())
-        .with_filter(filter_fn(|meta: &Metadata<'_>| meta.target() == ACCESS_LOG_TARGET))
+        .with_filter(filter_fn(|meta: &Metadata<'_>| {
+            meta.target() == ACCESS_LOG_TARGET
+        }))
         .boxed();
 
     // `Level` ordering: more verbose == greater, so `<=` keeps this level and below.

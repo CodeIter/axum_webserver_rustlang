@@ -22,7 +22,9 @@ use tracing::{info, warn};
 /// Resolves when Ctrl+C (all platforms) or SIGTERM (Unix) is received.
 async fn wait_for_signal() {
     let ctrl_c = async {
-        signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
     };
 
     #[cfg(unix)]
@@ -54,7 +56,10 @@ pub async fn run(
 
     let graceful = async move {
         wait_for_signal().await;
-        info!(timeout_secs = timeout.as_secs(), "shutdown signal received; draining connections");
+        info!(
+            timeout_secs = timeout.as_secs(),
+            "shutdown signal received; draining connections"
+        );
         // Fail readiness probes first so orchestrators stop sending traffic.
         ready.store(false, Ordering::SeqCst);
         // `notify_one` stores a permit, so ordering relative to the waiter is safe.

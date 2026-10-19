@@ -81,7 +81,11 @@ impl LogLevel {
 
 /// Complete server configuration.
 #[derive(Debug, Clone, Parser)]
-#[command(name = "axum-server", version, about = "Production-grade Axum web server")]
+#[command(
+    name = "axum-server",
+    version,
+    about = "Production-grade Axum web server"
+)]
 pub struct Config {
     /// IP address to bind to.
     #[arg(long, env = "SERVER_HOST", default_value = defaults::HOST)]
@@ -102,6 +106,12 @@ pub struct Config {
     /// Directory containing Markdown blog posts (`*.md` with YAML front-matter).
     #[arg(long, env = "BLOG_DIR", default_value = defaults::BLOG_DIR)]
     pub blog_dir: PathBuf,
+
+    /// Public base URL (e.g. `https://example.com`) used in `sitemap.xml` and
+    /// `robots.txt`. Overrides `RENDER_EXTERNAL_URL`, `RENDER_EXTERNAL_HOSTNAME`,
+    /// `EXTERNAL_URL` and `EXTERNAL_HOSTNAME`, which are consulted in that order.
+    #[arg(long)]
+    pub public_url: Option<String>,
 
     /// Directory served at `/`.
     #[arg(long, env = "STATIC_ROOT", default_value = defaults::STATIC_ROOT)]
@@ -174,6 +184,11 @@ impl Config {
         }
         if self.max_concurrent_requests == 0 {
             return Err("max concurrent requests must be greater than zero".into());
+        }
+        if let Some(url) = &self.public_url {
+            if crate::services::site::normalize_base_url(url).is_none() {
+                return Err(format!("public URL {url:?} is not a valid URL or hostname"));
+            }
         }
         if self.xff_proxy_depth == 0 {
             return Err("xff proxy depth must be at least 1".into());

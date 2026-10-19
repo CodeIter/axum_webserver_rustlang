@@ -31,7 +31,9 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
             Self::BadRequest(msg) => json_error(StatusCode::BAD_REQUEST, msg),
-            Self::Internal => json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal server error"),
+            Self::Internal => {
+                json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
+            }
         }
     }
 }

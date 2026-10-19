@@ -9,7 +9,7 @@ use tokio::sync::Semaphore;
 
 use crate::{
     config::Config,
-    services::{blog::Blog, templates::Templates},
+    services::{blog::Blog, site::SiteSettings, templates::Templates},
 };
 
 /// Cheaply cloneable state shared across requests.
@@ -28,10 +28,17 @@ pub struct AppState {
     pub templates: Templates,
     /// Published blog posts, loaded at startup.
     pub blog: Arc<Blog>,
+    /// Public URL and static-directory settings (sitemap / robots.txt).
+    pub site: Arc<SiteSettings>,
 }
 
 impl AppState {
-    pub fn new(config: &Config, templates: Templates, blog: Blog) -> Self {
+    pub fn new(
+        config: &Config,
+        templates: Templates,
+        blog: Blog,
+        public_url: Option<String>,
+    ) -> Self {
         Self {
             started_at: Instant::now(),
             ready: Arc::new(AtomicBool::new(true)),
@@ -39,6 +46,12 @@ impl AppState {
             concurrency_limit: config.max_concurrent_requests,
             templates,
             blog: Arc::new(blog),
+            site: Arc::new(SiteSettings {
+                public_url,
+                trust_proxy_headers: config.trust_proxy_headers,
+                static_root: config.static_root.clone(),
+                index_file: config.static_index_file.clone(),
+            }),
         }
     }
 }

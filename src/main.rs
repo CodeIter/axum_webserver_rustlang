@@ -25,10 +25,10 @@ mod shutdown;
 mod state;
 
 use config::Config;
-use services::{blog::Blog, templates::Templates};
+use services::{blog::Blog, site, templates::Templates};
 use state::AppState;
 use tokio::net::TcpListener;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,7 +45,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // A missing blog directory only logs a warning: the site still works.
     let blog = Blog::load(&config.blog_dir);
 
-    let state = AppState::new(&config, templates, blog);
+    // Public hostname: --public-url > RENDER_EXTERNAL_* > EXTERNAL_*.
+    let resolution = site::resolve_public_url(config.public_url.as_deref(), |name| {
+        std::env::var(name).ok()
+    });
+    for message in &resolution.warnings {
+        warn!("{message}");
+    }
+    match (&resolution.url, resolution.source) {
+        (Some(url), Some(source)) => info!(public_url = %url, source, "public URL resolved"),
+        _ => warn!(
+            "no public URL configured (set RENDER_EXTERNAL_URL / RENDER_EXTERNAL_HOSTNAME / \
+             EXTERNAL_URL / EXTERNAL_HOSTNAME or --public-url); sitemap.xml and robots.txt \
+             fall back to the request Host header"
+        ),
+    }
+
+    let state = AppState::new(&config, templates, blog, resolution.url);
     let app = app::build(&config, state.clone());
 
     let listener = TcpListener::bind(config.socket_addr()).await?;
@@ -57,7 +73,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "server listening"
     );
 
-    shutdown::run(listener, app, state.ready.clone(), config.shutdown_timeout()).await?;
+    shutdown::run(
+        listener,
+        app,
+        state.ready.clone(),
+        config.shutdown_timeout(),
+    )
+    .await?;
     info!("server stopped");
     Ok(())
 }

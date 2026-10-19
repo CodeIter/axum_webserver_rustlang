@@ -16,7 +16,10 @@ pub struct HeadersResponse {
 /// `GET /api/v1/http/headers` - every request header, as received.
 pub async fn headers(headers: HeaderMap) -> Json<HeadersResponse> {
     let headers = request_info::collect_headers(&headers);
-    Json(HeadersResponse { count: headers.len(), headers })
+    Json(HeadersResponse {
+        count: headers.len(),
+        headers,
+    })
 }
 
 /// `GET /api/v1/http/xff` - raw `CF-Connecting-IP`, `True-Client-IP` and

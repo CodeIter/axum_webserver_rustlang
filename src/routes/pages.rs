@@ -7,6 +7,10 @@ use crate::{
     state::AppState,
 };
 
+/// Paths of the template pages without parameters. These are listed in
+/// `sitemap.xml`, so add new static pages here *and* in [`router`].
+pub const PAGE_PATHS: &[&str] = &["/", "/about", "/hello/world", "/blog"];
+
 /// `/`, `/about`, `/hello/world`, `/blog` and `/blog/{date}/{slug}`, rendered from Handlebars templates.
 pub fn router() -> Router<AppState> {
     Router::new()

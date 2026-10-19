@@ -109,8 +109,14 @@ mod tests {
 
     #[test]
     fn sanitizes_raw_html() {
-        let r = run("Hi <script>alert(1)</script><a href=\"javascript:alert(1)\" onclick=\"x()\">x</a>");
-        assert!(!r.html.contains("<script") && !r.html.contains("javascript:") && !r.html.contains("onclick"));
+        let r = run(
+            "Hi <script>alert(1)</script><a href=\"javascript:alert(1)\" onclick=\"x()\">x</a>",
+        );
+        assert!(
+            !r.html.contains("<script")
+                && !r.html.contains("javascript:")
+                && !r.html.contains("onclick")
+        );
     }
 
     #[test]

@@ -35,7 +35,9 @@ pub fn build_target(
 ) -> Result<String, ApiError> {
     let proto = proto.to_ascii_lowercase();
     if proto != "http" && proto != "https" {
-        return Err(ApiError::BadRequest("proto must be 'http' or 'https'".into()));
+        return Err(ApiError::BadRequest(
+            "proto must be 'http' or 'https'".into(),
+        ));
     }
     if !is_valid_host(domain) {
         return Err(ApiError::BadRequest("invalid domain".into()));
@@ -62,7 +64,11 @@ fn is_valid_host(input: &str) -> bool {
         None => (input, None),
     };
     if let Some(p) = port {
-        if p.is_empty() || p.len() > 5 || p.parse::<u16>().is_err() || !p.bytes().all(|b| b.is_ascii_digit()) {
+        if p.is_empty()
+            || p.len() > 5
+            || p.parse::<u16>().is_err()
+            || !p.bytes().all(|b| b.is_ascii_digit())
+        {
             return false;
         }
     }
@@ -74,7 +80,9 @@ fn is_valid_host(input: &str) -> bool {
             && label.len() <= 63
             && !label.starts_with('-')
             && !label.ends_with('-')
-            && label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+            && label
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-')
     })
 }
 

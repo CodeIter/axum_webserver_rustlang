@@ -50,13 +50,24 @@ pub async fn index(State(state): State<AppState>) -> Response {
 
 /// `GET /about`
 pub async fn about(State(state): State<AppState>) -> Response {
-    render(&state.templates, StatusCode::OK, "about", json!({ "title": "About", "current_path": "/about" }))
+    render(
+        &state.templates,
+        StatusCode::OK,
+        "about",
+        json!({ "title": "About", "current_path": "/about" }),
+    )
 }
 
 /// `GET /hello/world` - rendered with its own layout (`layouts/layout_hello.hbs`).
 pub async fn hello_world(State(state): State<AppState>) -> Response {
     let data = json!({ "title": "Hello World", "current_path": "/hello/world" });
-    render_in(&state.templates, HELLO_LAYOUT, StatusCode::OK, "hello_world", data)
+    render_in(
+        &state.templates,
+        HELLO_LAYOUT,
+        StatusCode::OK,
+        "hello_world",
+        data,
+    )
 }
 
 /// The custom `404 Not Found` page; shared by every "not found" path.

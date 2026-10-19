@@ -25,7 +25,10 @@ pub async fn ready(State(state): State<AppState>) -> (StatusCode, Json<Value>) {
     if state.ready.load(Ordering::SeqCst) {
         (StatusCode::OK, Json(json!({ "status": "ready" })))
     } else {
-        (StatusCode::SERVICE_UNAVAILABLE, Json(json!({ "status": "shutting_down" })))
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "status": "shutting_down" })),
+        )
     }
 }
 

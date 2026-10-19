@@ -10,10 +10,14 @@ pub const MAX_QUANTITY: usize = 1_000;
 /// Generates `quantity` integers uniformly distributed in `min..=max`.
 pub fn generate(min: i64, max: i64, quantity: usize) -> Result<Vec<i64>, ApiError> {
     if min > max {
-        return Err(ApiError::BadRequest("min must be less than or equal to max".into()));
+        return Err(ApiError::BadRequest(
+            "min must be less than or equal to max".into(),
+        ));
     }
     if !(1..=MAX_QUANTITY).contains(&quantity) {
-        return Err(ApiError::BadRequest(format!("quantity must be between 1 and {MAX_QUANTITY}")));
+        return Err(ApiError::BadRequest(format!(
+            "quantity must be between 1 and {MAX_QUANTITY}"
+        )));
     }
     let mut rng = rand::rng();
     Ok((0..quantity).map(|_| rng.random_range(min..=max)).collect())

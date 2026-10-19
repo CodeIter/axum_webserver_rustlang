@@ -35,7 +35,11 @@ pub struct ConcurrencyMetrics {
 }
 
 /// Collects a health report from the supplied runtime figures.
-pub fn collect(uptime: Duration, concurrency_limit: usize, available_permits: usize) -> HealthReport {
+pub fn collect(
+    uptime: Duration,
+    concurrency_limit: usize,
+    available_permits: usize,
+) -> HealthReport {
     HealthReport {
         status: "ok",
         version: env!("CARGO_PKG_VERSION"),
@@ -66,5 +70,9 @@ fn read_rss_kib() -> Option<u64> {
 fn read_load_average() -> Option<[f64; 3]> {
     let content = fs::read_to_string("/proc/loadavg").ok()?;
     let mut fields = content.split_whitespace().map(|f| f.parse::<f64>());
-    Some([fields.next()?.ok()?, fields.next()?.ok()?, fields.next()?.ok()?])
+    Some([
+        fields.next()?.ok()?,
+        fields.next()?.ok()?,
+        fields.next()?.ok()?,
+    ])
 }

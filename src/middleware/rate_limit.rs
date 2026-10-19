@@ -17,11 +17,11 @@ use std::{
 };
 
 use axum::{
-    Extension,
     extract::{Request, State},
     http::{header::RETRY_AFTER, HeaderValue, StatusCode},
     middleware::Next,
     response::Response,
+    Extension,
 };
 
 use crate::{error::json_error, services::client_ip::ClientIp};
@@ -76,12 +76,20 @@ impl RateLimiter {
             }
         }
 
-        let entry = clients.entry(key).or_insert(Window { started: now, count: 0 });
+        let entry = clients.entry(key).or_insert(Window {
+            started: now,
+            count: 0,
+        });
         if now.duration_since(entry.started) >= self.window {
-            *entry = Window { started: now, count: 0 };
+            *entry = Window {
+                started: now,
+                count: 0,
+            };
         }
         if entry.count >= self.max_requests {
-            return Err(self.window.saturating_sub(now.duration_since(entry.started)));
+            return Err(self
+                .window
+                .saturating_sub(now.duration_since(entry.started)));
         }
         entry.count += 1;
         Ok(())
@@ -98,7 +106,10 @@ impl RateLimiter {
             let mut ticker = tokio::time::interval(limiter.window);
             loop {
                 ticker.tick().await;
-                let mut clients = limiter.clients.lock().unwrap_or_else(PoisonError::into_inner);
+                let mut clients = limiter
+                    .clients
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner);
                 Self::purge(&mut clients, Instant::now(), limiter.window);
             }
         });

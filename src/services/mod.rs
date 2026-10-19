@@ -6,5 +6,7 @@ pub mod number;
 pub mod password;
 pub mod redirect;
 pub mod request_info;
+pub mod seo;
+pub mod site;
 pub mod system;
 pub mod templates;

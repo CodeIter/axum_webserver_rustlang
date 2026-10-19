@@ -74,7 +74,9 @@ impl Templates {
         if let Some(missing) = REQUIRED.iter().find(|name| !engine.has_template(name)) {
             return Err(TemplateError::Missing(missing));
         }
-        Ok(Self { engine: Arc::new(engine) })
+        Ok(Self {
+            engine: Arc::new(engine),
+        })
     }
 
     /// Renders a template (typically a partial) *without* the layout.
@@ -87,13 +89,20 @@ impl Templates {
     /// `data` should be a JSON object (typically with `title` and
     /// `current_path`); `app_name` and `version` are added automatically.
     /// Values are HTML-escaped by default.
-    pub fn render_page_in(&self, layout: &str, page: &str, data: Value) -> Result<String, RenderError> {
+    pub fn render_page_in(
+        &self,
+        layout: &str,
+        page: &str,
+        data: Value,
+    ) -> Result<String, RenderError> {
         let mut context: Map<String, Value> = match data {
             Value::Object(map) => map,
             _ => Map::new(),
         };
         context.entry("app_name").or_insert_with(|| json!(APP_NAME));
-        context.entry("version").or_insert_with(|| json!(env!("CARGO_PKG_VERSION")));
+        context
+            .entry("version")
+            .or_insert_with(|| json!(env!("CARGO_PKG_VERSION")));
 
         let body = self.engine.render(page, &context)?;
         context.insert("body".into(), Value::String(body));
@@ -113,7 +122,11 @@ mod tests {
     #[test]
     fn renders_page_inside_layout_with_partials() {
         let html = templates()
-            .render_page_in(DEFAULT_LAYOUT, "index", json!({ "title": "Home", "current_path": "/" }))
+            .render_page_in(
+                DEFAULT_LAYOUT,
+                "index",
+                json!({ "title": "Home", "current_path": "/" }),
+            )
             .unwrap();
         assert!(html.contains("<!doctype html>"));
         assert!(html.contains("<meta charset=\"utf-8\">")); // meta partial
@@ -125,7 +138,11 @@ mod tests {
     #[test]
     fn marks_current_navigation_item() {
         let html = templates()
-            .render_page_in(DEFAULT_LAYOUT, "about", json!({ "title": "About", "current_path": "/about" }))
+            .render_page_in(
+                DEFAULT_LAYOUT,
+                "about",
+                json!({ "title": "About", "current_path": "/about" }),
+            )
             .unwrap();
         assert!(html.contains("href=\"/about\" aria-current=\"page\""));
         assert!(!html.contains("href=\"/\" aria-current=\"page\""));
@@ -134,7 +151,11 @@ mod tests {
     #[test]
     fn escapes_untrusted_values() {
         let html = templates()
-            .render_page_in(DEFAULT_LAYOUT, "404", json!({ "title": "<script>x</script>", "current_path": "" }))
+            .render_page_in(
+                DEFAULT_LAYOUT,
+                "404",
+                json!({ "title": "<script>x</script>", "current_path": "" }),
+            )
             .unwrap();
         assert!(!html.contains("<script>x</script>"));
         assert!(html.contains("&lt;script&gt;"));
@@ -144,10 +165,14 @@ mod tests {
     fn hello_page_uses_its_dedicated_layout() {
         let t = templates();
         let data = json!({ "title": "Hello World", "current_path": "/hello/world" });
-        let hello = t.render_page_in(HELLO_LAYOUT, "hello_world", data.clone()).unwrap();
+        let hello = t
+            .render_page_in(HELLO_LAYOUT, "hello_world", data.clone())
+            .unwrap();
         assert!(hello.contains("Hello, World!") && hello.contains("hello-body"));
         assert!(!hello.contains("<nav")); // no site navigation in this layout
-        let default = t.render_page_in(DEFAULT_LAYOUT, "hello_world", data).unwrap();
+        let default = t
+            .render_page_in(DEFAULT_LAYOUT, "hello_world", data)
+            .unwrap();
         assert!(default.contains("<nav") && !default.contains("hello-body"));
     }
 

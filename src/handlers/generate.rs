@@ -28,7 +28,12 @@ pub async fn number(
 ) -> Result<Json<NumberResponse>, ApiError> {
     let Path((min, max, quantity)) = path?;
     let numbers = number::generate(min, max, quantity)?;
-    Ok(Json(NumberResponse { min, max, quantity, numbers }))
+    Ok(Json(NumberResponse {
+        min,
+        max,
+        quantity,
+        numbers,
+    }))
 }
 
 #[derive(Deserialize)]
@@ -52,5 +57,9 @@ pub async fn password(
     let Path((length, quantity)) = path?;
     let Query(PasswordQuery { chars }) = query?;
     let passwords = password::generate(length, quantity, chars.as_deref())?;
-    Ok(Json(PasswordResponse { length, quantity, passwords }))
+    Ok(Json(PasswordResponse {
+        length,
+        quantity,
+        passwords,
+    }))
 }

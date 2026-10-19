@@ -45,7 +45,7 @@ pub fn build(config: &Config, state: AppState) -> Router {
     limiter.spawn_janitor();
 
     // Request pipeline (after the global middleware layers added below):
-    //   1. template routes  (`/`, `/about`)
+    //   1. template routes  (`/`, `/about`, `/blog`, ...) and `/sitemap.xml`, `/robots.txt`
     //   2. API endpoints    (`/api/v1/*`)
     //   3. static files     (fallback)
     //   4. custom 404 page  (static service's not-found fallback)
@@ -53,8 +53,12 @@ pub fn build(config: &Config, state: AppState) -> Router {
     // static fallback (e.g. a file named `index.html` cannot shadow `/`).
     let router = Router::new()
         .merge(routes::pages::router())
+        .merge(routes::seo::router())
         .nest("/api/v1", routes::api::router())
-        .fallback_service(routes::static_files::router(config, state.templates.clone()))
+        .fallback_service(routes::static_files::router(
+            config,
+            state.templates.clone(),
+        ))
         .with_state(state.clone());
 
     let router = router

@@ -27,10 +27,14 @@ pub fn generate(
     custom_chars: Option<&str>,
 ) -> Result<Vec<String>, ApiError> {
     if !(1..=MAX_LENGTH).contains(&length) {
-        return Err(ApiError::BadRequest(format!("length must be between 1 and {MAX_LENGTH}")));
+        return Err(ApiError::BadRequest(format!(
+            "length must be between 1 and {MAX_LENGTH}"
+        )));
     }
     if !(1..=MAX_QUANTITY).contains(&quantity) {
-        return Err(ApiError::BadRequest(format!("quantity must be between 1 and {MAX_QUANTITY}")));
+        return Err(ApiError::BadRequest(format!(
+            "quantity must be between 1 and {MAX_QUANTITY}"
+        )));
     }
 
     let alphabet = build_alphabet(custom_chars)?;
@@ -51,12 +55,16 @@ fn build_alphabet(custom: Option<&str>) -> Result<Vec<char>, ApiError> {
         return Err(ApiError::BadRequest("chars must not be empty".into()));
     }
     if source.chars().any(char::is_control) {
-        return Err(ApiError::BadRequest("chars must not contain control characters".into()));
+        return Err(ApiError::BadRequest(
+            "chars must not contain control characters".into(),
+        ));
     }
     let mut seen = HashSet::new();
     let alphabet: Vec<char> = source.chars().filter(|c| seen.insert(*c)).collect();
     if alphabet.len() > MAX_CHARSET {
-        return Err(ApiError::BadRequest(format!("chars may contain at most {MAX_CHARSET} unique characters")));
+        return Err(ApiError::BadRequest(format!(
+            "chars may contain at most {MAX_CHARSET} unique characters"
+        )));
     }
     Ok(alphabet)
 }
@@ -69,7 +77,9 @@ mod tests {
     fn respects_length_quantity_and_charset() {
         let pws = generate(16, 5, Some("ab1")).unwrap();
         assert_eq!(pws.len(), 5);
-        assert!(pws.iter().all(|p| p.chars().count() == 16 && p.chars().all(|c| "ab1".contains(c))));
+        assert!(pws
+            .iter()
+            .all(|p| p.chars().count() == 16 && p.chars().all(|c| "ab1".contains(c))));
     }
 
     #[test]
