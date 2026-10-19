@@ -79,3 +79,29 @@ Templates use [W3.CSS 5](https://www.w3schools.com/w3css/5/w3.css) loaded from w
 (allowed in the CSP's `style-src`; remote `https:` images are allowed in `img-src`).
 Because inline scripts/styles are blocked by the CSP, behaviour lives in `public/js/` and
 custom CSS in `public/css/style.css`.
+
+## Sitemap, robots.txt and public hostname
+
+`GET /sitemap.xml` is generated per request from: the template pages (`PAGE_PATHS` in
+`src/routes/pages.rs`; add new pages there too), every published blog post (with `lastmod` =
+`updatedAt`), and public `.html`/`.htm` files in the static directory (hidden files/directories
+are never listed; `dir/index.html` appears as `/dir/`; the root `index.html` is skipped because
+`/` is a template route). `GET /robots.txt` allows crawling, disallows `/api/`, and links the sitemap.
+Both routes take precedence over files of the same name in `public/`.
+
+Absolute URLs use the public hostname, resolved in this order (first valid value wins):
+`--public-url` > `RENDER_EXTERNAL_URL` > `RENDER_EXTERNAL_HOSTNAME` > `EXTERNAL_URL` > `EXTERNAL_HOSTNAME`.
+Bare hostnames get `https` (`http` for localhost). If nothing is configured the request `Host`
+header is used (validated, but client-controlled), and a warning is logged at startup.
+
+## CI/CD (`.github/workflows/`)
+
+| Workflow | Trigger | Does |
+|----------|---------|------|
+| `ci.yaml` | push to `main` | `cargo fmt --check`, `test`, `clippy -D warnings`, `build --release`, then publishes a **pre-release** `pre-<run>-<sha>` with the Linux binary |
+| `pullrequest.yaml` | PR opened / updated / reopened | same checks, `cargo build` |
+| `release.yaml` | tag `v*` | same checks, then a formal **GitHub Release** with the Linux binary |
+
+Release assets: `axum-server-linux-x86_64` (bare binary), `axum-server-linux-x86_64.tar.gz`
+(binary + `templates/`, `public/`, `blog/`, which the server needs at runtime) and `sha256sums.txt`.
+The binary is built on `ubuntu-latest`, so it links against that runner's glibc.
