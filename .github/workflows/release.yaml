@@ -4,7 +4,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -58,6 +58,8 @@ jobs:
             dist/axum-server-linux-x86_64 \
             dist/axum-server-linux-x86_64.tar.gz \
             dist/sha256sums.txt \
+            --target "$GITHUB_SHA" \
             --verify-tag \
-            --title "$GITHUB_REF_NAME" \
+            --title "Release $GITHUB_REF_NAME" \
+            --notes "Automated build of commit ${GITHUB_SHA} from ${GITHUB_REF_NAME}." \
             --generate-notes

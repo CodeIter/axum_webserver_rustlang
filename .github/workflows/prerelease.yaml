@@ -1,0 +1,69 @@
+# Continuous integration for Pre-release tags.
+#
+# Every push to Pre-release tags is validated (fmt, test, clippy, build). When everything
+# passes, a pre-release is published with the compiled Linux binary.
+name: Pre-release
+
+on:
+  push:
+    tags: ["v*-alpha*", "v*-beta*", "v*-rc*"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Validate and publish pre-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the pre-release and its tag
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Build
+        run: cargo build --release --locked
+
+      # The binary needs `templates/` at runtime, so ship a bundle next to the
+      # bare binary. A checksum file covers both.
+      - name: Package
+        run: |
+          mkdir -p dist/axum-server
+          cp target/release/axum-server dist/axum-server/
+          cp -r templates public blog README.md dist/axum-server/
+          tar -C dist -czf dist/axum-server-linux-x86_64.tar.gz axum-server
+          cp target/release/axum-server dist/axum-server-linux-x86_64
+          (cd dist && sha256sum axum-server-linux-x86_64 axum-server-linux-x86_64.tar.gz > sha256sums.txt)
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          gh release create "$TAG" \
+            dist/axum-server-linux-x86_64 \
+            dist/axum-server-linux-x86_64.tar.gz \
+            dist/sha256sums.txt \
+            --target "$GITHUB_SHA" \
+            --verify-tag \
+            --title "Pre-release $TAG" \
+            --notes "Automated build of commit ${GITHUB_SHA} from ${TAG}." \
+            --generate-notes \
+            --prerelease
