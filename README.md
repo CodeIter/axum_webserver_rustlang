@@ -130,3 +130,10 @@ Values are arbitrary JSON (max 64 KiB); keys are 1-256 characters. `create` fail
 (failures for 5 s), so a down database makes requests fail fast with 503 instead of each waiting for a timeout.
 `/api/v1/health` deliberately does *not* depend on Supabase, so a database outage never restarts the service.
 Without credentials the `/kv/supabase/*` routes return 503, and the server starts normally.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+Coded with ❤️ by [@CodeIter](https://github.com/CodeIter)
