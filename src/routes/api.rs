@@ -6,6 +6,7 @@ use crate::{
     error::json_error,
     handlers::{blog, generate, redirect, request_info, system},
     middleware::headers,
+    routes::kv,
     state::AppState,
 };
 
@@ -15,13 +16,16 @@ async fn not_found() -> Response {
 }
 
 /// Builds the API router; mount it under `/api/v1`.
-pub fn router() -> Router<AppState> {
+pub fn router(state: &AppState) -> Router<AppState> {
     let routes = Router::new()
         .route("/hello", get(system::hello))
         .route("/ready", get(system::ready))
         .route("/health", get(system::health))
         .route("/ip", get(system::client_ip))
         .route("/blog/posts", get(blog::posts))
+        // Key-value stores: `/kv/memory/...` and `/kv/supabase/...`.
+        .nest_service("/kv/memory", kv::router(state.memory.clone()))
+        .nest_service("/kv/supabase", kv::supabase_router(state.supabase.clone()))
         .route("/http/headers", get(request_info::headers))
         .route("/http/xff", get(request_info::xff))
         .route("/number/{min}/{max}/{quantity}", get(generate::number))

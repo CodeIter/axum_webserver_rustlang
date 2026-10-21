@@ -54,7 +54,7 @@ pub fn build(config: &Config, state: AppState) -> Router {
     let router = Router::new()
         .merge(routes::pages::router())
         .merge(routes::seo::router())
-        .nest("/api/v1", routes::api::router())
+        .nest("/api/v1", routes::api::router(&state))
         .fallback_service(routes::static_files::router(
             config,
             state.templates.clone(),

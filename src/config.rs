@@ -12,8 +12,11 @@
 //! loaded into the process environment before parsing.
 
 use std::{
+    convert::Infallible,
+    fmt,
     net::{IpAddr, SocketAddr},
     path::PathBuf,
+    str::FromStr,
     time::Duration,
 };
 
@@ -32,8 +35,36 @@ pub mod defaults {
     pub const RATE_LIMIT_WINDOW_SECS: u64 = 60;
     pub const MAX_CONCURRENT_REQUESTS: usize = 1024;
     pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
+    pub const SUPABASE_TABLE: &str = "kv_store";
+    pub const SUPABASE_TIMEOUT_SECS: u64 = 10;
+    pub const MEMORY_STORE_MAX_ENTRIES: usize = 10_000;
     pub const TRUST_PROXY_HEADERS: bool = true;
     pub const XFF_PROXY_DEPTH: usize = 3;
+}
+
+/// A secret string; its `Debug` output is redacted so it cannot leak into logs.
+#[derive(Clone)]
+pub struct Secret(String);
+
+impl Secret {
+    /// The secret value. Handle with care.
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for Secret {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Secret(***)")
+    }
+}
+
+impl FromStr for Secret {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_owned()))
+    }
 }
 
 /// What to do when a request targets a dotfile (e.g. `/.env`, `/.git/config`).
@@ -113,6 +144,28 @@ pub struct Config {
     #[arg(long)]
     pub public_url: Option<String>,
 
+    /// Supabase project URL (e.g. `https://<ref>.supabase.co`). Together with
+    /// `--supabase-key` it enables the Supabase store.
+    #[arg(long, env = "SUPABASE_URL")]
+    pub supabase_url: Option<String>,
+
+    /// Supabase API key. Use the server-side `service_role` key and prefer the
+    /// environment variable over the flag (flags are visible in process lists).
+    #[arg(long, env = "SUPABASE_KEY", hide_env_values = true)]
+    pub supabase_key: Option<Secret>,
+
+    /// Table used by the Supabase store (see `supabase/kv_store.sql`).
+    #[arg(long, env = "SUPABASE_TABLE", default_value = defaults::SUPABASE_TABLE)]
+    pub supabase_table: String,
+
+    /// Timeout (seconds) for Supabase requests.
+    #[arg(long, env = "SUPABASE_TIMEOUT_SECS", default_value_t = defaults::SUPABASE_TIMEOUT_SECS)]
+    pub supabase_timeout_secs: u64,
+
+    /// Maximum number of entries in the in-memory store.
+    #[arg(long, env = "MEMORY_STORE_MAX_ENTRIES", default_value_t = defaults::MEMORY_STORE_MAX_ENTRIES)]
+    pub memory_store_max_entries: usize,
+
     /// Directory served at `/`.
     #[arg(long, env = "STATIC_ROOT", default_value = defaults::STATIC_ROOT)]
     pub static_root: PathBuf,
@@ -185,6 +238,20 @@ impl Config {
         if self.max_concurrent_requests == 0 {
             return Err("max concurrent requests must be greater than zero".into());
         }
+        let has_url = self
+            .supabase_url
+            .as_deref()
+            .is_some_and(|v| !v.trim().is_empty());
+        let has_key = self
+            .supabase_key
+            .as_ref()
+            .is_some_and(|k| !k.expose().trim().is_empty());
+        if has_url != has_key {
+            return Err("SUPABASE_URL and SUPABASE_KEY must be set together".into());
+        }
+        if self.supabase_timeout_secs == 0 || self.memory_store_max_entries == 0 {
+            return Err("supabase timeout and memory store size must be greater than zero".into());
+        }
         if let Some(url) = &self.public_url {
             if crate::services::site::normalize_base_url(url).is_none() {
                 return Err(format!("public URL {url:?} is not a valid URL or hostname"));
@@ -202,6 +269,17 @@ impl Config {
     /// Address the listener binds to.
     pub fn socket_addr(&self) -> SocketAddr {
         SocketAddr::new(self.host, self.port)
+    }
+
+    /// `(url, key)` when the Supabase store is configured.
+    pub fn supabase_credentials(&self) -> Option<(&str, &str)> {
+        let url = self.supabase_url.as_deref()?.trim();
+        let key = self.supabase_key.as_ref()?.expose().trim();
+        (!url.is_empty() && !key.is_empty()).then_some((url, key))
+    }
+
+    pub fn supabase_timeout(&self) -> Duration {
+        Duration::from_secs(self.supabase_timeout_secs)
     }
 
     pub fn request_timeout(&self) -> Duration {

@@ -9,7 +9,12 @@ use tokio::sync::Semaphore;
 
 use crate::{
     config::Config,
-    services::{blog::Blog, site::SiteSettings, templates::Templates},
+    services::{
+        blog::Blog,
+        site::SiteSettings,
+        store::{MemoryStore, SupabaseStore},
+        templates::Templates,
+    },
 };
 
 /// Cheaply cloneable state shared across requests.
@@ -30,6 +35,10 @@ pub struct AppState {
     pub blog: Arc<Blog>,
     /// Public URL and static-directory settings (sitemap / robots.txt).
     pub site: Arc<SiteSettings>,
+    /// In-memory key-value store (always available).
+    pub memory: Arc<MemoryStore>,
+    /// Supabase key-value store; `None` when `SUPABASE_URL`/`SUPABASE_KEY` are not set.
+    pub supabase: Option<Arc<SupabaseStore>>,
 }
 
 impl AppState {
@@ -38,6 +47,8 @@ impl AppState {
         templates: Templates,
         blog: Blog,
         public_url: Option<String>,
+        memory: MemoryStore,
+        supabase: Option<SupabaseStore>,
     ) -> Self {
         Self {
             started_at: Instant::now(),
@@ -46,6 +57,8 @@ impl AppState {
             concurrency_limit: config.max_concurrent_requests,
             templates,
             blog: Arc::new(blog),
+            memory: Arc::new(memory),
+            supabase: supabase.map(Arc::new),
             site: Arc::new(SiteSettings {
                 public_url,
                 trust_proxy_headers: config.trust_proxy_headers,

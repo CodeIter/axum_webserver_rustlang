@@ -8,5 +8,6 @@ pub mod redirect;
 pub mod request_info;
 pub mod seo;
 pub mod site;
+pub mod store;
 pub mod system;
 pub mod templates;

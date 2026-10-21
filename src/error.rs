@@ -1,12 +1,15 @@
 //! Error types and uniform JSON error responses.
 
 use axum::{
-    extract::rejection::{PathRejection, QueryRejection},
+    extract::rejection::{JsonRejection, PathRejection, QueryRejection},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
 use serde_json::json;
+use tracing::{error, warn};
+
+use crate::services::store::StoreError;
 
 /// Builds a JSON error body: `{"error": "...", "status": 429}`.
 ///
@@ -25,6 +28,21 @@ pub enum ApiError {
     /// Unexpected failure; details are logged, never sent to the client (`500`).
     #[error("internal server error")]
     Internal,
+    /// The requested resource does not exist (`404`).
+    #[error("{0}")]
+    NotFound(String),
+    /// The request conflicts with existing state (`409`).
+    #[error("{0}")]
+    Conflict(String),
+    /// A backing service is unavailable or not configured (`503`).
+    #[error("{0}")]
+    ServiceUnavailable(String),
+    /// A backing store is full (`507`).
+    #[error("{0}")]
+    InsufficientStorage(String),
+    /// A backing service answered with an error (`502`); details are only logged.
+    #[error("bad gateway")]
+    BadGateway,
 }
 
 impl IntoResponse for ApiError {
@@ -34,6 +52,11 @@ impl IntoResponse for ApiError {
             Self::Internal => {
                 json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal server error")
             }
+            Self::NotFound(msg) => json_error(StatusCode::NOT_FOUND, msg),
+            Self::Conflict(msg) => json_error(StatusCode::CONFLICT, msg),
+            Self::ServiceUnavailable(msg) => json_error(StatusCode::SERVICE_UNAVAILABLE, msg),
+            Self::InsufficientStorage(msg) => json_error(StatusCode::INSUFFICIENT_STORAGE, msg),
+            Self::BadGateway => json_error(StatusCode::BAD_GATEWAY, "upstream database error"),
         }
     }
 }
@@ -48,5 +71,31 @@ impl From<PathRejection> for ApiError {
 impl From<QueryRejection> for ApiError {
     fn from(rejection: QueryRejection) -> Self {
         Self::BadRequest(rejection.to_string())
+    }
+}
+
+impl From<JsonRejection> for ApiError {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::BadRequest(rejection.body_text())
+    }
+}
+
+/// Maps store failures to HTTP errors. Backend details are logged, never returned.
+impl From<StoreError> for ApiError {
+    fn from(err: StoreError) -> Self {
+        match err {
+            StoreError::Invalid(message) => Self::BadRequest(message),
+            StoreError::NotFound => Self::NotFound("key not found".into()),
+            StoreError::AlreadyExists => Self::Conflict("key already exists".into()),
+            StoreError::CapacityExceeded => Self::InsufficientStorage("store is full".into()),
+            StoreError::Unavailable(detail) => {
+                warn!(%detail, "store unavailable");
+                Self::ServiceUnavailable("database is unavailable".into())
+            }
+            StoreError::Backend(detail) => {
+                error!(%detail, "store backend error");
+                Self::BadGateway
+            }
+        }
     }
 }

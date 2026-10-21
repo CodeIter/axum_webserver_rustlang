@@ -2,6 +2,7 @@
 
 pub mod blog;
 pub mod generate;
+pub mod kv;
 pub mod pages;
 pub mod redirect;
 pub mod request_info;
