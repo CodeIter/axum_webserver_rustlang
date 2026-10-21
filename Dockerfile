@@ -2,7 +2,9 @@
 
 # ---- Stage 1: build a static musl binary ------------------------------------
 FROM rust:1-alpine AS builder
+
 RUN apk add --no-cache musl-dev gcc
+
 WORKDIR /app
 
 # Build dependencies first so this layer is cached until Cargo.* changes.
@@ -17,8 +19,10 @@ RUN cargo build --release --locked
 
 # ---- Stage 2: minimal runtime ------------------------------------------------
 FROM alpine:3.22 AS runtime
+
 RUN apk add --no-cache ca-certificates \
     && addgroup -S app && adduser -S -G app -H -s /sbin/nologin app
+
 WORKDIR /app
 
 COPY --from=builder /app/target/release/axum-server /usr/local/bin/axum-server
@@ -27,20 +31,14 @@ COPY --chown=app:app templates ./templates
 COPY --chown=app:app blog ./blog
 COPY --chown=app:app public ./public
 
-# Render injects PORT at runtime (default 10000); the app reads it directly.
-ENV PORT=10000 \
-    TEMPLATES_DIR=/app/templates \
-    BLOG_DIR=/app/blog \
-    STATIC_ROOT=/app/public \
-    LOG_FORMAT=json \
-    TRUST_PROXY_HEADERS=true \
-    XFF_PROXY_DEPTH=3
-
 USER app
-EXPOSE 10000
+
+EXPOSE 8000
 
 # BusyBox wget ships with Alpine, so no extra packages are needed.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -qO /dev/null "http://127.0.0.1:${PORT}/api/v1/health" || exit 1
+    CMD wget -qO /dev/null "http://0.0.0.0:8000/api/v1/health" || exit 1
 
+# Set the entrypoint and default command
 ENTRYPOINT ["axum-server"]
+CMD ["--host", "0.0.0.0", "--port", "8000", "--templates-dir", "/app/templates", "--blog-dir", "/app/blog", "--static-root", "/app/public"]
