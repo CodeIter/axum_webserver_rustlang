@@ -24,22 +24,32 @@ use clap::{error::ErrorKind, ArgAction, Parser, ValueEnum};
 
 /// Built-in default values (lowest precedence).
 pub mod defaults {
+
     pub const HOST: &str = "0.0.0.0";
-    pub const PORT: u16 = 8080;
+    pub const PORT: u16 = 8000;
+
     pub const REQUEST_TIMEOUT_SECS: u64 = 30;
+    pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
+
     pub const STATIC_ROOT: &str = "./public";
     pub const TEMPLATES_DIR: &str = "./templates";
     pub const BLOG_DIR: &str = "./blog";
+
     pub const STATIC_INDEX_FILE: &str = "index.html";
+
     pub const RATE_LIMIT_MAX_REQUESTS: u32 = 100;
     pub const RATE_LIMIT_WINDOW_SECS: u64 = 60;
+
     pub const MAX_CONCURRENT_REQUESTS: usize = 1024;
-    pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
+
     pub const SUPABASE_TABLE: &str = "kv_store";
     pub const SUPABASE_TIMEOUT_SECS: u64 = 10;
+
     pub const MEMORY_STORE_MAX_ENTRIES: usize = 10_000;
-    pub const TRUST_PROXY_HEADERS: bool = true;
-    pub const XFF_PROXY_DEPTH: usize = 3;
+
+    pub const TRUST_PROXY_HEADERS: bool = false;
+    pub const XFF_PROXY_DEPTH: usize = 1;
+
 }
 
 /// A secret string; its `Debug` output is redacted so it cannot leak into logs.
