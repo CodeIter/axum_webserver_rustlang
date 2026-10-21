@@ -2,7 +2,7 @@
 
 # ---- Stage 1: build a static musl binary ------------------------------------
 FROM rust:1-alpine AS builder
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev gcc
 WORKDIR /app
 
 # Build dependencies first so this layer is cached until Cargo.* changes.
