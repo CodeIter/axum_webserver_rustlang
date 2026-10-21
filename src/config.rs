@@ -49,7 +49,6 @@ pub mod defaults {
 
     pub const TRUST_PROXY_HEADERS: bool = false;
     pub const XFF_PROXY_DEPTH: usize = 1;
-
 }
 
 /// A secret string; its `Debug` output is redacted so it cannot leak into logs.
