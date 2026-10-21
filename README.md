@@ -105,3 +105,28 @@ header is used (validated, but client-controlled), and a warning is logged at st
 Release assets: `axum-server-linux-x86_64` (bare binary), `axum-server-linux-x86_64.tar.gz`
 (binary + `templates/`, `public/`, `blog/`, which the server needs at runtime) and `sha256sums.txt`.
 The binary is built on `ubuntu-latest`, so it links against that runner's glibc.
+
+## Key-value stores
+
+Two stores implement the same `KeyValueStore` trait (`src/services/store/`) and live in `AppState`:
+
+* `state.memory`: in-memory `MemoryStore` (always on; bounded by `MEMORY_STORE_MAX_ENTRIES`; lost on restart).
+* `state.supabase`: `SupabaseStore`, persistent, `None` unless `SUPABASE_URL` **and** `SUPABASE_KEY` are set.
+  Create the table with `supabase/kv_store.sql`, and use the server-side `service_role` key (never the anon key).
+
+Values are arbitrary JSON (max 64 KiB); keys are 1-256 characters. `create` fails with 409 if the key exists,
+`update`/`delete` with 404 if it does not (no implicit upsert).
+
+| Method & path (`/api/v1/kv/{memory,supabase}`) | Description |
+|------|-------------|
+| `GET /items?limit=&offset=` | list ordered by key (default 50, max 200) |
+| `POST /items` `{"key","value"}` | create (201 / 409) |
+| `GET /items/{key}` | read (200 / 404) |
+| `PUT /items/{key}` `{"value"}` | update (200 / 404) |
+| `DELETE /items/{key}` | delete (204 / 404) |
+| `GET /supabase/health` | live Supabase health check (200 / 503) |
+
+**Supabase availability gate:** every Supabase operation first checks health. A result is cached for 30 s
+(failures for 5 s), so a down database makes requests fail fast with 503 instead of each waiting for a timeout.
+`/api/v1/health` deliberately does *not* depend on Supabase, so a database outage never restarts the service.
+Without credentials the `/kv/supabase/*` routes return 503, and the server starts normally.
