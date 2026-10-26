@@ -135,6 +135,18 @@ pub struct Config {
     #[arg(long, env = "PORT", default_value_t = defaults::PORT)]
     pub port: u16,
 
+    /// Log output format (applies to access log and diagnostics).
+    #[arg(long, env = "LOG_FORMAT", value_enum, default_value_t = LogFormat::Text)]
+    pub log_format: LogFormat,
+
+    /// Diagnostic log verbosity (stderr).
+    #[arg(long, env = "LOG_LEVEL", value_enum, default_value_t = LogLevel::Info)]
+    pub log_level: LogLevel,
+
+    /// Seconds to wait for in-flight requests on shutdown before forcing exit.
+    #[arg(long, env = "SHUTDOWN_TIMEOUT_SECS", default_value_t = defaults::SHUTDOWN_TIMEOUT_SECS)]
+    pub shutdown_timeout_secs: u64,
+
     /// Maximum time (seconds) a request may take before `408` is returned.
     #[arg(long, env = "REQUEST_TIMEOUT_SECS", default_value_t = defaults::REQUEST_TIMEOUT_SECS)]
     pub request_timeout_secs: u64,
@@ -146,34 +158,6 @@ pub struct Config {
     /// Directory containing Markdown blog posts (`*.md` with YAML front-matter).
     #[arg(long, env = "BLOG_DIR", default_value = defaults::BLOG_DIR)]
     pub blog_dir: PathBuf,
-
-    /// Public base URL (e.g. `https://example.com`) used in `sitemap.xml` and
-    /// `robots.txt`. Overrides `RENDER_EXTERNAL_URL`, `RENDER_EXTERNAL_HOSTNAME`,
-    /// `EXTERNAL_URL` and `EXTERNAL_HOSTNAME`, which are consulted in that order.
-    #[arg(long)]
-    pub public_url: Option<String>,
-
-    /// Supabase project URL (e.g. `https://<ref>.supabase.co`). Together with
-    /// `--supabase-key` it enables the Supabase store.
-    #[arg(long, env = "SUPABASE_URL")]
-    pub supabase_url: Option<String>,
-
-    /// Supabase API key. Use the server-side `service_role` key and prefer the
-    /// environment variable over the flag (flags are visible in process lists).
-    #[arg(long, env = "SUPABASE_KEY", hide_env_values = true)]
-    pub supabase_key: Option<Secret>,
-
-    /// Table used by the Supabase store (see `supabase/kv_store.sql`).
-    #[arg(long, env = "SUPABASE_TABLE", default_value = defaults::SUPABASE_TABLE)]
-    pub supabase_table: String,
-
-    /// Timeout (seconds) for Supabase requests.
-    #[arg(long, env = "SUPABASE_TIMEOUT_SECS", default_value_t = defaults::SUPABASE_TIMEOUT_SECS)]
-    pub supabase_timeout_secs: u64,
-
-    /// Maximum number of entries in the in-memory store.
-    #[arg(long, env = "MEMORY_STORE_MAX_ENTRIES", default_value_t = defaults::MEMORY_STORE_MAX_ENTRIES)]
-    pub memory_store_max_entries: usize,
 
     /// Directory served at `/`.
     #[arg(long, env = "STATIC_ROOT", default_value = defaults::STATIC_ROOT)]
@@ -199,6 +183,12 @@ pub struct Config {
     #[arg(long, env = "MAX_CONCURRENT_REQUESTS", default_value_t = defaults::MAX_CONCURRENT_REQUESTS)]
     pub max_concurrent_requests: usize,
 
+    /// Public base URL (e.g. `https://example.com`) used in `sitemap.xml` and
+    /// `robots.txt`. Overrides `RENDER_EXTERNAL_URL`, `RENDER_EXTERNAL_HOSTNAME`,
+    /// `EXTERNAL_URL` and `EXTERNAL_HOSTNAME`, which are consulted in that order.
+    #[arg(long)]
+    pub public_url: Option<String>,
+
     /// Trust `CF-Connecting-IP`, `True-Client-IP` and `X-Forwarded-For` for the
     /// client IP. Disable when the server is reachable without a trusted proxy.
     #[arg(long, env = "TRUST_PROXY_HEADERS", action = ArgAction::Set, default_value_t = defaults::TRUST_PROXY_HEADERS)]
@@ -209,17 +199,27 @@ pub struct Config {
     #[arg(long, env = "XFF_PROXY_DEPTH", default_value_t = defaults::XFF_PROXY_DEPTH)]
     pub xff_proxy_depth: usize,
 
-    /// Seconds to wait for in-flight requests on shutdown before forcing exit.
-    #[arg(long, env = "SHUTDOWN_TIMEOUT_SECS", default_value_t = defaults::SHUTDOWN_TIMEOUT_SECS)]
-    pub shutdown_timeout_secs: u64,
+    /// Maximum number of entries in the in-memory store.
+    #[arg(long, env = "MEMORY_STORE_MAX_ENTRIES", default_value_t = defaults::MEMORY_STORE_MAX_ENTRIES)]
+    pub memory_store_max_entries: usize,
 
-    /// Log output format (applies to access log and diagnostics).
-    #[arg(long, env = "LOG_FORMAT", value_enum, default_value_t = LogFormat::Text)]
-    pub log_format: LogFormat,
+    /// Supabase project URL (e.g. `https://<ref>.supabase.co`). Together with
+    /// `--supabase-key` it enables the Supabase store.
+    #[arg(long, env = "SUPABASE_URL")]
+    pub supabase_url: Option<String>,
 
-    /// Diagnostic log verbosity (stderr).
-    #[arg(long, env = "LOG_LEVEL", value_enum, default_value_t = LogLevel::Info)]
-    pub log_level: LogLevel,
+    /// Supabase API key. Use the server-side `service_role` key and prefer the
+    /// environment variable over the flag (flags are visible in process lists).
+    #[arg(long, env = "SUPABASE_KEY", hide_env_values = true)]
+    pub supabase_key: Option<Secret>,
+
+    /// Table used by the Supabase store (see `supabase/kv_store.sql`).
+    #[arg(long, env = "SUPABASE_TABLE", default_value = defaults::SUPABASE_TABLE)]
+    pub supabase_table: String,
+
+    /// Timeout (seconds) for Supabase requests.
+    #[arg(long, env = "SUPABASE_TIMEOUT_SECS", default_value_t = defaults::SUPABASE_TIMEOUT_SECS)]
+    pub supabase_timeout_secs: u64,
 }
 
 impl Config {
