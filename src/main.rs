@@ -24,6 +24,8 @@ mod services;
 mod shutdown;
 mod state;
 
+use std::fs;
+
 use config::Config;
 use services::{
     blog::Blog,
@@ -40,6 +42,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Precedence: CLI > environment (incl. `.env`) > defaults (see `config`).
     let config = Config::load();
     logging::init(config.log_format, config.log_level);
+
+    // Create directories if they don't exist
+    fs::create_dir_all(&config.public_dir)?;
+    fs::create_dir_all(&config.static_dir)?;
+    fs::create_dir_all(&config.resources_dir)?;
+    fs::create_dir_all(&config.templates_dir)?;
+    fs::create_dir_all(&config.blog_dir)?;
 
     // Fail fast: a server without its templates cannot render pages or 404s.
     let templates = Templates::load(&config.templates_dir).unwrap_or_else(|err| {
@@ -99,6 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!(
         addr = %listener.local_addr()?,
         public_dir = %&config.public_dir.display(),
+        static_dir = %&config.static_dir.display(),
+        resources_dir = %&config.resources_dir.display(),
         templates_dir = %config.templates_dir.display(),
         blog_dir = %config.blog_dir.display(),
         "server listening"
