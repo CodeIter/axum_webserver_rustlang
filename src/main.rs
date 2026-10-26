@@ -37,6 +37,17 @@ use state::AppState;
 use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
+fn ensure_dir(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    fs::create_dir_all(path).map_err(|err| {
+        error!(
+            path = %path.display(),
+            error = %err,
+            "cannot create directory"
+        );
+        err.into()
+    })
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Precedence: CLI > environment (incl. `.env`) > defaults (see `config`).
@@ -44,11 +55,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     logging::init(config.log_format, config.log_level);
 
     // Create directories if they don't exist
-    fs::create_dir_all(&config.public_dir)?;
-    fs::create_dir_all(&config.static_dir)?;
-    fs::create_dir_all(&config.resources_dir)?;
-    fs::create_dir_all(&config.templates_dir)?;
-    fs::create_dir_all(&config.blog_dir)?;
+    ensure_dir(&config.public_dir)?;
+    ensure_dir(&config.static_dir)?;
+    ensure_dir(&config.resources_dir)?;
+    ensure_dir(&config.templates_dir)?;
+    ensure_dir(&config.blog_dir)?;
 
     // Fail fast: a server without its templates cannot render pages or 404s.
     let templates = Templates::load(&config.templates_dir).unwrap_or_else(|err| {
