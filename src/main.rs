@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind(config.socket_addr()).await?;
     info!(
         addr = %listener.local_addr()?,
-        static_root = %config.static_root.display(),
+        static_dir = %&config.static_dir.display(),
         templates_dir = %config.templates_dir.display(),
         blog_dir = %config.blog_dir.display(),
         "server listening"

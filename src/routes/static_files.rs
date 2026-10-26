@@ -18,12 +18,12 @@ use crate::{
 /// the custom 404 page (status 404) rendered from `404.hbs`.
 pub fn router(config: &Config, templates: Templates) -> Router {
     // Index handling is done by `static_guard` so the file name is configurable.
-    let serve_dir = ServeDir::new(&config.static_root)
+    let serve_dir = ServeDir::new(&config.static_dir)
         .append_index_html_on_directories(false)
         .not_found_service(pages::not_found.with_state(templates.clone()));
 
     let guard = Arc::new(StaticGuard {
-        root: config.static_root.clone(),
+        root: config.static_dir.clone(),
         index_file: config.static_index_file.clone(),
         dotfiles: config.static_dotfiles,
         templates,

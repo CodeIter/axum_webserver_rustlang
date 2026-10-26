@@ -31,7 +31,7 @@ pub mod defaults {
     pub const REQUEST_TIMEOUT_SECS: u64 = 30;
     pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
 
-    pub const STATIC_ROOT: &str = "./public";
+    pub const STATIC_DIR: &str = "./public";
     pub const TEMPLATES_DIR: &str = "./templates";
     pub const BLOG_DIR: &str = "./blog";
 
@@ -160,8 +160,8 @@ pub struct Config {
     pub blog_dir: PathBuf,
 
     /// Directory served at `/`.
-    #[arg(long, env = "STATIC_ROOT", default_value = defaults::STATIC_ROOT)]
-    pub static_root: PathBuf,
+    #[arg(long, env = "STATIC_DIR", default_value = defaults::STATIC_DIR)]
+    pub static_dir: PathBuf,
 
     /// File served for directory requests.
     #[arg(long, env = "STATIC_INDEX_FILE", default_value = defaults::STATIC_INDEX_FILE)]

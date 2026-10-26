@@ -62,7 +62,7 @@ impl AppState {
             site: Arc::new(SiteSettings {
                 public_url,
                 trust_proxy_headers: config.trust_proxy_headers,
-                static_root: config.static_root.clone(),
+                static_root: config.static_dir.clone(),
                 index_file: config.static_index_file.clone(),
             }),
         }
