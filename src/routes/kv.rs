@@ -1,4 +1,4 @@
-//! Key-value store routes, mounted below `/api/v1/kv/{memory,supabase}`.
+//! Key-value store routes, mounted below `/api/v1/kv/memory`.
 //!
 //! ```text
 //! GET    /items            list (?limit=&offset=)
@@ -6,17 +6,13 @@
 //! GET    /items/{key}      read
 //! PUT    /items/{key}      update   {"value": <json>}
 //! DELETE /items/{key}      delete
-//! GET    /health           (Supabase only) live health check
 //! ```
 
 use std::sync::Arc;
 
 use axum::{routing::get, Router};
 
-use crate::{
-    handlers::kv,
-    services::store::{KeyValueStore, SupabaseStore},
-};
+use crate::{handlers::kv, services::store::KeyValueStore};
 
 /// CRUD router for any store; the store itself is the router state.
 pub fn router<S: KeyValueStore>(store: Arc<S>) -> Router {
@@ -30,17 +26,4 @@ pub fn router<S: KeyValueStore>(store: Arc<S>) -> Router {
         )
         .fallback(kv::unknown_endpoint)
         .with_state(store)
-}
-
-/// Supabase routes: CRUD plus `/health`, or a uniform `503` if not configured.
-pub fn supabase_router(store: Option<Arc<SupabaseStore>>) -> Router {
-    match store {
-        Some(store) => {
-            let health = Router::new()
-                .route("/health", get(kv::supabase_health))
-                .with_state(Arc::clone(&store));
-            router(store).merge(health)
-        }
-        None => Router::new().fallback(kv::supabase_not_configured),
-    }
 }

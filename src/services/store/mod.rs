@@ -1,13 +1,11 @@
 //! Key-value storage abstraction with two backends:
 //!
 //! * [`MemoryStore`]: process-local, bounded, lost on restart.
-//! * [`SupabaseStore`]: persistent, backed by a Supabase (PostgREST) table.
 //!
 //! Both implement [`KeyValueStore`] with identical semantics, so callers can be
 //! generic over the backend. Values are arbitrary JSON.
 
 pub mod memory;
-pub mod supabase;
 
 use std::future::Future;
 
@@ -16,14 +14,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub use memory::MemoryStore;
-pub use supabase::SupabaseStore;
 
 /// Longest accepted key, in characters.
 pub const MAX_KEY_LEN: usize = 256;
 /// Largest accepted value, as serialized JSON.
 pub const MAX_VALUE_BYTES: usize = 64 * 1024;
 
-/// A stored entry. Field names match the Supabase table columns.
+/// A stored entry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Record {
     pub key: String,
@@ -45,12 +42,6 @@ pub enum StoreError {
     /// The in-memory store reached its entry limit.
     #[error("store capacity reached")]
     CapacityExceeded,
-    /// The backend cannot be reached right now.
-    #[error("store unavailable: {0}")]
-    Unavailable(String),
-    /// The backend answered, but with an error or an unexpected response.
-    #[error("store backend error: {0}")]
-    Backend(String),
 }
 
 /// CRUD operations shared by every store.

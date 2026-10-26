@@ -23,9 +23,8 @@ pub fn router(state: &AppState) -> Router<AppState> {
         .route("/health", get(system::health))
         .route("/ip", get(system::client_ip))
         .route("/blog/posts", get(blog::posts))
-        // Key-value stores: `/kv/memory/...` and `/kv/supabase/...`.
+        // Key-value stores: `/kv/memory/...` .
         .nest_service("/kv/memory", kv::router(state.memory.clone()))
-        .nest_service("/kv/supabase", kv::supabase_router(state.supabase.clone()))
         .route("/http/headers", get(request_info::headers))
         .route("/http/xff", get(request_info::xff))
         .route("/number/{min}/{max}/{quantity}", get(generate::number))

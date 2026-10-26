@@ -1,8 +1,6 @@
 //! HTTP handlers for the key-value stores.
 //!
-//! The CRUD handlers are generic over [`KeyValueStore`], so the exact same code
-//! serves the in-memory and the Supabase store; each store gets its own router
-//! whose state is that store.
+//! The CRUD handlers are generic over [`KeyValueStore`].
 
 use std::sync::Arc;
 
@@ -12,7 +10,7 @@ use axum::{
         Path, Query, State,
     },
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -20,7 +18,7 @@ use serde_json::Value;
 
 use crate::{
     error::{json_error, ApiError},
-    services::store::{KeyValueStore, Record, StoreError, SupabaseStore},
+    services::store::{KeyValueStore, Record, StoreError},
 };
 
 const DEFAULT_LIST_LIMIT: usize = 50;
@@ -111,31 +109,6 @@ pub async fn list<S: KeyValueStore>(
         limit,
         offset,
     }))
-}
-
-/// `GET /api/v1/kv/supabase/health` - probes Supabase right now.
-pub async fn supabase_health(State(store): State<Arc<SupabaseStore>>) -> Response {
-    match store.health_check().await {
-        Ok(health) => Json(health).into_response(),
-        Err(StoreError::Backend(detail)) => {
-            tracing::warn!(%detail, "Supabase health probe rejected");
-            json_error(
-                StatusCode::SERVICE_UNAVAILABLE,
-                "Supabase is reachable but rejected the probe (check SUPABASE_KEY and the table)",
-            )
-        }
-        Err(err) => {
-            tracing::warn!(%err, "Supabase health probe failed");
-            json_error(StatusCode::SERVICE_UNAVAILABLE, "Supabase is unreachable")
-        }
-    }
-}
-
-/// Fallback when the Supabase store is not configured.
-pub async fn supabase_not_configured() -> ApiError {
-    ApiError::ServiceUnavailable(
-        "Supabase store is not configured (set SUPABASE_URL and SUPABASE_KEY)".into(),
-    )
 }
 
 /// Fallback for unknown paths below a store prefix.

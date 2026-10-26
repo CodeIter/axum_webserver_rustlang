@@ -7,7 +7,6 @@ use axum::{
     Json,
 };
 use serde_json::json;
-use tracing::{error, warn};
 
 use crate::services::store::StoreError;
 
@@ -34,15 +33,9 @@ pub enum ApiError {
     /// The request conflicts with existing state (`409`).
     #[error("{0}")]
     Conflict(String),
-    /// A backing service is unavailable or not configured (`503`).
-    #[error("{0}")]
-    ServiceUnavailable(String),
     /// A backing store is full (`507`).
     #[error("{0}")]
     InsufficientStorage(String),
-    /// A backing service answered with an error (`502`); details are only logged.
-    #[error("bad gateway")]
-    BadGateway,
 }
 
 impl IntoResponse for ApiError {
@@ -54,9 +47,7 @@ impl IntoResponse for ApiError {
             }
             Self::NotFound(msg) => json_error(StatusCode::NOT_FOUND, msg),
             Self::Conflict(msg) => json_error(StatusCode::CONFLICT, msg),
-            Self::ServiceUnavailable(msg) => json_error(StatusCode::SERVICE_UNAVAILABLE, msg),
             Self::InsufficientStorage(msg) => json_error(StatusCode::INSUFFICIENT_STORAGE, msg),
-            Self::BadGateway => json_error(StatusCode::BAD_GATEWAY, "upstream database error"),
         }
     }
 }
@@ -88,14 +79,6 @@ impl From<StoreError> for ApiError {
             StoreError::NotFound => Self::NotFound("key not found".into()),
             StoreError::AlreadyExists => Self::Conflict("key already exists".into()),
             StoreError::CapacityExceeded => Self::InsufficientStorage("store is full".into()),
-            StoreError::Unavailable(detail) => {
-                warn!(%detail, "store unavailable");
-                Self::ServiceUnavailable("database is unavailable".into())
-            }
-            StoreError::Backend(detail) => {
-                error!(%detail, "store backend error");
-                Self::BadGateway
-            }
         }
     }
 }
