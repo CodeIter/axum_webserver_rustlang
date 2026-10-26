@@ -28,6 +28,9 @@ pub mod defaults {
     pub const HOST: &str = "0.0.0.0";
     pub const PORT: u16 = 8000;
 
+    pub const LOG_FORMAT: super::LogFormat = super::LogFormat::Text;
+    pub const LOG_LEVEL: super::LogLevel = super::LogLevel::Info;
+
     pub const REQUEST_TIMEOUT_SECS: u64 = 30;
     pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
 
@@ -41,19 +44,20 @@ pub mod defaults {
     pub const RESOURCES_ROUTE: &str = "/resources";
 
     pub const PUBLIC_INDEX_FILE: &str = "index.html";
+    pub const PUBLIC_DOTFILES: super::DotfilePolicy = super::DotfilePolicy::Ignore;
 
     pub const RATE_LIMIT_MAX_REQUESTS: u32 = 100;
     pub const RATE_LIMIT_WINDOW_SECS: u64 = 60;
 
     pub const MAX_CONCURRENT_REQUESTS: usize = 1024;
 
-    pub const SUPABASE_TABLE: &str = "kv_store";
-    pub const SUPABASE_TIMEOUT_SECS: u64 = 10;
+    pub const TRUST_PROXY_HEADERS: bool = false;
+    pub const XFF_PROXY_DEPTH: usize = 1;
 
     pub const MEMORY_STORE_MAX_ENTRIES: usize = 10_000;
 
-    pub const TRUST_PROXY_HEADERS: bool = false;
-    pub const XFF_PROXY_DEPTH: usize = 1;
+    pub const SUPABASE_TABLE: &str = "kv_store";
+    pub const SUPABASE_TIMEOUT_SECS: u64 = 10;
 }
 
 /// A secret string; its `Debug` output is redacted so it cannot leak into logs.
@@ -141,11 +145,11 @@ pub struct Config {
     pub port: u16,
 
     /// Log output format (applies to access log and diagnostics).
-    #[arg(long, env = "LOG_FORMAT", value_enum, default_value_t = LogFormat::Text)]
+    #[arg(long, env = "LOG_FORMAT", value_enum, default_value_t = defaults::LOG_FORMAT)]
     pub log_format: LogFormat,
 
     /// Diagnostic log verbosity (stderr).
-    #[arg(long, env = "LOG_LEVEL", value_enum, default_value_t = LogLevel::Info)]
+    #[arg(long, env = "LOG_LEVEL", value_enum, default_value_t = defaults::LOG_LEVEL)]
     pub log_level: LogLevel,
 
     /// Seconds to wait for in-flight requests on shutdown before forcing exit.
@@ -189,7 +193,7 @@ pub struct Config {
     pub public_index_file: String,
 
     /// Policy for requests that touch dotfiles.
-    #[arg(long, env = "PUBLIC_DOTFILES", value_enum, default_value_t = DotfilePolicy::Ignore)]
+    #[arg(long, env = "PUBLIC_DOTFILES", value_enum, default_value_t = defaults::PUBLIC_DOTFILES)]
     pub public_dotfiles: DotfilePolicy,
 
     /// Maximum requests per client IP per window.
@@ -204,12 +208,6 @@ pub struct Config {
     #[arg(long, env = "MAX_CONCURRENT_REQUESTS", default_value_t = defaults::MAX_CONCURRENT_REQUESTS)]
     pub max_concurrent_requests: usize,
 
-    /// Public base URL (e.g. `https://example.com`) used in `sitemap.xml` and
-    /// `robots.txt`. Overrides `RENDER_EXTERNAL_URL`, `RENDER_EXTERNAL_HOSTNAME`,
-    /// `EXTERNAL_URL` and `EXTERNAL_HOSTNAME`, which are consulted in that order.
-    #[arg(long)]
-    pub public_url: Option<String>,
-
     /// Trust `CF-Connecting-IP`, `True-Client-IP` and `X-Forwarded-For` for the
     /// client IP. Disable when the server is reachable without a trusted proxy.
     #[arg(long, env = "TRUST_PROXY_HEADERS", action = ArgAction::Set, default_value_t = defaults::TRUST_PROXY_HEADERS)]
@@ -219,6 +217,14 @@ pub struct Config {
     /// client (Render: client, cloudflare edge, render lb => 3).
     #[arg(long, env = "XFF_PROXY_DEPTH", default_value_t = defaults::XFF_PROXY_DEPTH)]
     pub xff_proxy_depth: usize,
+
+    /// Public base URL (e.g. `https://example.com`) used in `sitemap.xml` and
+    /// `robots.txt`.
+    /// Overrides environment variables `RENDER_EXTERNAL_URL`, `RENDER_EXTERNAL_HOSTNAME`, `EXTERNAL_URL`, `EXTERNAL_HOSTNAME` and
+    /// `Host` request header, which are consulted in that order.
+    /// If all environment variables are not set, the server falls back to the request `Host` header, which may be unreliable.
+    #[arg(long, env = "PUBLIC_URL")]
+    pub public_url: Option<String>,
 
     /// Maximum number of entries in the in-memory store.
     #[arg(long, env = "MEMORY_STORE_MAX_ENTRIES", default_value_t = defaults::MEMORY_STORE_MAX_ENTRIES)]
