@@ -18,12 +18,18 @@ const SECURITY_HEADERS: &[(&str, &str)] = &[
     ("referrer-policy", "no-referrer"),
     (
         "content-security-policy",
-        "default-src 'self'; style-src 'self' https://www.w3schools.com; img-src 'self' https: data:; \
+        "default-src 'self'; style-src 'self'; img-src 'self' https: data:; \
          base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
     ),
     // Ignored over plain HTTP; effective behind TLS termination.
-    ("strict-transport-security", "max-age=31536000; includeSubDomains"),
-    ("permissions-policy", "camera=(), microphone=(), geolocation=()"),
+    (
+        "strict-transport-security",
+        "max-age=31536000; includeSubDomains",
+    ),
+    (
+        "permissions-policy",
+        "camera=(), microphone=(), geolocation=()",
+    ),
     ("cross-origin-opener-policy", "same-origin"),
     ("cross-origin-resource-policy", "same-origin"),
     ("x-permitted-cross-domain-policies", "none"),
