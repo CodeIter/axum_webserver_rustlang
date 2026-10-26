@@ -12,7 +12,7 @@ use crate::{
     services::templates::Templates,
 };
 
-/// Serves `config.static_root`, guarded by the dotfile policy and index handling.
+/// Serves `config.public_dir`, guarded by the dotfile policy and index handling.
 ///
 /// This is the last stop of the request pipeline: files that do not exist get
 /// the custom 404 page (status 404) rendered from `404.hbs`.
@@ -24,8 +24,8 @@ pub fn router(config: &Config, templates: Templates) -> Router {
 
     let guard = Arc::new(StaticGuard {
         root: config.public_dir.clone(),
-        index_file: config.static_index_file.clone(),
-        dotfiles: config.static_dotfiles,
+        index_file: config.public_index_file.clone(),
+        dotfiles: config.public_dotfiles,
         templates,
     });
 

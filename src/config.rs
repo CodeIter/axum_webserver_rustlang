@@ -35,7 +35,7 @@ pub mod defaults {
     pub const TEMPLATES_DIR: &str = "./templates";
     pub const BLOG_DIR: &str = "./blog";
 
-    pub const STATIC_INDEX_FILE: &str = "index.html";
+    pub const PUBLIC_INDEX_FILE: &str = "index.html";
 
     pub const RATE_LIMIT_MAX_REQUESTS: u32 = 100;
     pub const RATE_LIMIT_WINDOW_SECS: u64 = 60;
@@ -164,12 +164,12 @@ pub struct Config {
     pub public_dir: PathBuf,
 
     /// File served for directory requests.
-    #[arg(long, env = "STATIC_INDEX_FILE", default_value = defaults::STATIC_INDEX_FILE)]
-    pub static_index_file: String,
+    #[arg(long, env = "PUBLIC_INDEX_FILE", default_value = defaults::PUBLIC_INDEX_FILE)]
+    pub public_index_file: String,
 
     /// Policy for requests that touch dotfiles.
-    #[arg(long, env = "STATIC_DOTFILES", value_enum, default_value_t = DotfilePolicy::Ignore)]
-    pub static_dotfiles: DotfilePolicy,
+    #[arg(long, env = "PUBLIC_DOTFILES", value_enum, default_value_t = DotfilePolicy::Ignore)]
+    pub public_dotfiles: DotfilePolicy,
 
     /// Maximum requests per client IP per window.
     #[arg(long, env = "RATE_LIMIT_MAX_REQUESTS", default_value_t = defaults::RATE_LIMIT_MAX_REQUESTS)]
@@ -269,7 +269,7 @@ impl Config {
         if self.xff_proxy_depth == 0 {
             return Err("xff proxy depth must be at least 1".into());
         }
-        if self.static_index_file.is_empty() || self.static_index_file.contains(['/', '\\']) {
+        if self.public_index_file.is_empty() || self.public_index_file.contains(['/', '\\']) {
             return Err("static index file must be a plain, non-empty file name".into());
         }
         Ok(())

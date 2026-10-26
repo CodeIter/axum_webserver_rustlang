@@ -63,7 +63,7 @@ impl AppState {
                 public_url,
                 trust_proxy_headers: config.trust_proxy_headers,
                 static_root: config.public_dir.clone(),
-                index_file: config.static_index_file.clone(),
+                index_file: config.public_index_file.clone(),
             }),
         }
     }
