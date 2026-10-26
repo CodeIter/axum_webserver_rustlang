@@ -30,6 +30,8 @@ COPY --from=builder /app/target/release/axum-server /usr/local/bin/axum-server
 COPY --chown=app:app templates ./templates
 COPY --chown=app:app blog ./blog
 COPY --chown=app:app public ./public
+COPY --chown=app:app static ./static
+COPY --chown=app:app resources ./resources
 
 USER app
 
@@ -41,4 +43,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Set the entrypoint and default command
 ENTRYPOINT ["axum-server"]
-CMD ["--host", "0.0.0.0", "--port", "8000", "--templates-dir", "/app/templates", "--blog-dir", "/app/blog", "--static-root", "/app/public"]
+CMD ["--host", "0.0.0.0", "--port", "8000", "--templates-dir", "/app/templates", "--blog-dir", "/app/blog", "--public-dir", "/app/public", "--static-dir", "/app/static", "--resources-dir", "/app/resources"]
