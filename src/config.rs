@@ -37,6 +37,9 @@ pub mod defaults {
     pub const STATIC_DIR: &str = "./static";
     pub const RESOURCES_DIR: &str = "./resources";
 
+    pub const STATIC_ROUTE: &str = "/static";
+    pub const RESOURCES_ROUTE: &str = "/resources";
+
     pub const PUBLIC_INDEX_FILE: &str = "index.html";
 
     pub const RATE_LIMIT_MAX_REQUESTS: u32 = 100;
@@ -172,6 +175,14 @@ pub struct Config {
     /// Directory served at `/resources`.
     #[arg(long, env = "RESOURCES_DIR", default_value = defaults::RESOURCES_DIR)]
     pub resources_dir: PathBuf,
+
+    /// Route prefix for static files (e.g. `/static`).
+    #[arg(long, env = "STATIC_ROUTE", default_value = defaults::STATIC_ROUTE)]
+    pub static_route: String,
+
+    /// Route prefix for resources (e.g. `/resources`).
+    #[arg(long, env = "RESOURCES_ROUTE", default_value = defaults::RESOURCES_ROUTE)]
+    pub resources_route: String,
 
     /// File served for directory requests.
     #[arg(long, env = "PUBLIC_INDEX_FILE", default_value = defaults::PUBLIC_INDEX_FILE)]

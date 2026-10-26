@@ -36,8 +36,8 @@ pub fn router(config: &Config, templates: Templates) -> Router {
     });
 
     Router::new()
-        .nest_service("/static", serve_static_dir)
-        .nest_service("/resources", serve_resources_dir)
+        .nest_service(&config.static_route, serve_static_dir)
+        .nest_service(&config.resources_route, serve_resources_dir)
         .fallback_service(serve_public_dir)
         .layer(from_fn_with_state(guard, static_guard))
 }
