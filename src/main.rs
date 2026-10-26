@@ -37,14 +37,14 @@ use state::AppState;
 use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
-fn ensure_dir(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+fn ensure_dir(path: &std::path::Path) -> std::io::Result<()> {
     fs::create_dir_all(path).map_err(|err| {
         error!(
             path = %path.display(),
             error = %err,
             "cannot create directory"
         );
-        err.into()
+        err
     })
 }
 
