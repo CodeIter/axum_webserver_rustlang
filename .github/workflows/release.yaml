@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p dist/axum-server
           cp target/release/axum-server dist/axum-server/
-          cp -r templates public blog README.md dist/axum-server/
+          cp -r templates blog public static resources Cargo.toml README.md LICENSE .env.example dist/axum-server/
           tar -C dist -czf dist/axum-server-linux-x86_64.tar.gz axum-server
           cp target/release/axum-server dist/axum-server-linux-x86_64
           (cd dist && sha256sum axum-server-linux-x86_64 axum-server-linux-x86_64.tar.gz > sha256sums.txt)
