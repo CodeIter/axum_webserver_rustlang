@@ -1,131 +1,150 @@
 # axum-server
 
-Modular, production-oriented web server on **Axum 0.8**.
+A production-grade, modular web server built on Rust and Axum 0.8. It serves server-rendered Handlebars pages, a Markdown-powered blog with YAML front matter, a JSON API under `/api/v1`, and static files, all behind a hardened middleware stack that handles client IP resolution, rate limiting, concurrency limiting, request timeouts, security headers, and structured access logging. Configuration is layered (command-line flags, then environment variables or a `.env` file, then built-in defaults), and the server shuts down gracefully with a hard deadline. A multi-stage Dockerfile produces a small static musl binary on Alpine, ready to deploy.
 
+## Features
+
+- Server-rendered pages with Handlebars templates, layouts, and partials
+- Markdown blog with YAML front matter, series support, sanitized HTML output, and "load more" pagination
+- Automatically generated `sitemap.xml` and `robots.txt`
+- JSON API under `/api/v1` with uniform error responses
+  - Health, readiness, and client IP endpoints
+  - In-memory key-value store with full CRUD and a configurable entry cap
+  - Random number and password generators
+  - Request header and forwarding header inspection
+  - URL redirect endpoint
+- Static file serving from `public/`, `static/`, and `resources/`, with a configurable index file and dotfile policy (`allow`, `deny`, `ignore`)
+- Custom 404 page rendered from a template
+- Per-client fixed-window rate limiting, with IPv6 clients grouped by `/64` prefix
+- Load-shedding concurrency limiter that returns `503` instead of queueing
+- Request timeout returning `408`
+- Security headers on every response: CSP, HSTS, `X-Frame-Options`, `X-Content-Type-Options`, and more
+- Trusted client IP detection from `CF-Connecting-IP`, `True-Client-IP`, and `X-Forwarded-For`
+- Structured access log on stdout and diagnostics on stderr, in text or JSON format
+- Graceful shutdown with a configurable timeout
+- Layered configuration: CLI flags override environment variables, which override defaults
+
+## Getting Started
+
+### Prerequisites
+
+- A recent stable [Rust toolchain](https://rustup.rs/)
+
+### Run in development
+
+```bash
+git clone https://github.com/CodeIter/axum_webserver_rustlang axum-server
+cd axum-server
+cp .env.example .env   # optional create .env file
+vim .env               # optional edit .env file
+cargo run
 ```
-cargo run --release -- --port 3000 --log-format json
+
+The server listens on `http://0.0.0.0:8000` by default. Run it from the project root so it can find the `templates/`, `blog/`, `public/`, `static/` and `resources/` directories.
+
+### Build for release
+
+```bash
+cargo build --release
+./target/release/axum-server
 ```
 
-Config precedence: **CLI flags > env vars / `.env` > defaults in `src/config.rs`**.
-Run `cargo run -- --help` for all options; see `.env.example` for env names.
+The release profile enables thin LTO, a single codegen unit, and symbol stripping for a small, fast binary.
 
-| Endpoint (`/api/v1`)                       | Description                          |
-|--------------------------------------------|--------------------------------------|
-| `GET /hello`                               | "Hello World"                        |
-| `GET /ready`                               | Readiness (503 while shutting down)  |
-| `GET /health`                              | Status + system metrics              |
-| `GET /ip`                                  | Detected client IP + source          |
-| `GET /http/headers`                        | All request headers (JSON)           |
-| `GET /http/xff`                            | Raw CF-Connecting-IP / True-Client-IP / X-Forwarded-For |
-| `GET /number/{min}/{max}/{quantity}`       | Random integers                      |
-| `GET /password/{length}/{quantity}?chars=` | CSPRNG passwords                     |
-| `GET /redirect/{proto}/{domain}/{*path}?…` | 307 redirect                         |
+### Command-line options
 
-### Pages, templates and request order
+```bash
+cargo run -- --help
+cargo run -- --port 8000
+```
 
-Handlebars templates live in `--templates-dir` (`TEMPLATES_DIR`, default `./templates`):
-`layouts/layout.hbs`, `partials/{meta,navigation}.hbs`, `index.hbs` (`/`), `about.hbs`
-(`/about`), `hello_world.hbs` (`/hello/world`, wrapped in its own `layouts/layout_hello.hbs`) and `404.hbs`. All of these are required; the server exits at startup if one is missing.
+### Configuration
 
-Requests flow through the global middleware, then: **template routes -> `/api/v1` API ->
-static files (`--static-root`, default `./public`) -> custom 404 page**.
-Unknown `/api/v1/*` paths return a JSON 404 instead of the HTML page.
-Access log -> stdout; all other logs -> stderr; both support `--log-format text|json`.
+Every option can be set as a CLI flag, an environment variable, or a line in `.env`. See `.env.example` for a starting point.
+See `--help` CLI flag for details.
 
-## Running on Render
+### Endpoints
 
-* Deploy with the included Alpine `Dockerfile`; set the health check path to `/api/v1/health`.
-* Render injects `PORT`, which the server reads directly.
-* Client IP precedence: `CF-Connecting-IP` > `True-Client-IP` > `X-Forwarded-For` > socket.
-  `X-Forwarded-For` is counted **from the right** (`XFF_PROXY_DEPTH`, default 3 =
-  client, Cloudflare edge, Render LB); the spoofable leftmost entry is never used.
-  If the chain is shorter than the depth, the socket address is used.
-* `GET /api/v1/ip` returns `{"ip": "...", "source": "cf-connecting-ip"}`.
-* Set `TRUST_PROXY_HEADERS=false` if the service is ever reachable without these proxies.
-
-## Markdown blog
-
-Posts are `*.md` files in `--blog-dir` (`BLOG_DIR`, default `./blog`), loaded once at
-startup (restart to pick up changes). Pages: `/` (5 latest), `/blog` (10 latest),
-`/blog/{createdAt date}/{slug}`; "Load more" uses `GET /api/v1/blog/posts?offset=&limit=`
-(JSON with `posts` plus server-rendered `html` cards; `limit` is capped at 50).
-
-All front-matter fields are optional and parsed leniently (a bad value logs a warning and
-falls back to its default):
-
-| Field | Default |
-|-------|---------|
-| `slug` | file name without extension (URL-safe, lower-cased) |
-| `title` | derived from the slug (`my-post` -> `My Post`) |
-| `excerpt` | first paragraph, capped at 160 characters |
-| `author` (string / list) | `Anonymous` |
-| `license` | `CC BY-SA` |
-| `createdAt` / `updatedAt` (ISO date or datetime; naive values are UTC) | file creation / modification time |
-| `keywords` (list or comma-separated string) | empty |
-| `category`, `serie`, `image`, `imageAlt`, `canonicalUrl` | empty |
-| `lang` | `en` |
-| `published` / `featured` | `true` / `false` |
-| `readingTime` | always computed (200 words/min, minimum 1); front-matter value ignored |
-
-Notes: unpublished posts are hidden everywhere, including their direct URL. `image` and
-`canonicalUrl` accept `http(s)` URLs or site paths only. Markdown HTML output is sanitized
-(no scripts, event handlers or `javascript:` URLs). Reference images with absolute paths
-(`/img/x.png`, served from `public/`). Filesystem dates are unreliable in Docker images
-(they reflect the build), so set `createdAt` explicitly for real posts.
-
-## UI
-
-Templates use [W3.CSS 5](https://www.w3schools.com/w3css/5/w3.css) loaded from w3schools.com
-(allowed in the CSP's `style-src`; remote `https:` images are allowed in `img-src`).
-Because inline scripts/styles are blocked by the CSP, behaviour lives in `public/js/` and
-custom CSS in `public/css/style.css`.
-
-## Sitemap, robots.txt and public hostname
-
-`GET /sitemap.xml` is generated per request from: the template pages (`PAGE_PATHS` in
-`src/routes/pages.rs`; add new pages there too), every published blog post (with `lastmod` =
-`updatedAt`), and public `.html`/`.htm` files in the static directory (hidden files/directories
-are never listed; `dir/index.html` appears as `/dir/`; the root `index.html` is skipped because
-`/` is a template route). `GET /robots.txt` allows crawling, disallows `/api/`, and links the sitemap.
-Both routes take precedence over files of the same name in `public/`.
-
-Absolute URLs use the public hostname, resolved in this order (first valid value wins):
-`--public-url` > `RENDER_EXTERNAL_URL` > `RENDER_EXTERNAL_HOSTNAME` > `EXTERNAL_URL` > `EXTERNAL_HOSTNAME`.
-Bare hostnames get `https` (`http` for localhost). If nothing is configured the request `Host`
-header is used (validated, but client-controlled), and a warning is logged at startup.
-
-## CI/CD (`.github/workflows/`)
-
-| Workflow | Trigger | Does |
-|----------|---------|------|
-| `ci.yaml` | push to `main` | `cargo fmt --check`, `test`, `clippy -D warnings`, `build --release`, then publishes a **pre-release** `pre-<run>-<sha>` with the Linux binary |
-| `pullrequest.yaml` | PR opened / updated / reopened | same checks, `cargo build` |
-| `release.yaml` | tag `v*` | same checks, then a formal **GitHub Release** with the Linux binary |
-
-Release assets: `axum-server-linux-x86_64` (bare binary), `axum-server-linux-x86_64.tar.gz`
-(binary + `templates/`, `public/`, `blog/`, which the server needs at runtime) and `sha256sums.txt`.
-The binary is built on `ubuntu-latest`, so it links against that runner's glibc.
-
-## Key-value stores
-
-Store implement the `KeyValueStore` trait (`src/services/store/`) and live in `AppState`:
-
-* `state.memory`: in-memory `MemoryStore` (always on; bounded by `MEMORY_STORE_MAX_ENTRIES`; lost on restart).
-
-Values are arbitrary JSON (max 64 KiB); keys are 1-256 characters. `create` fails with 409 if the key exists,
-`update`/`delete` with 404 if it does not (no implicit upsert).
-
-| Method & path (`/api/v1/kv/memory`) | Description |
+| Path | Description |
 |------|-------------|
-| `GET /items?limit=&offset=` | list ordered by key (default 50, max 200) |
-| `POST /items` `{"key","value"}` | create (201 / 409) |
-| `GET /items/{key}` | read (200 / 404) |
-| `PUT /items/{key}` `{"value"}` | update (200 / 404) |
-| `DELETE /items/{key}` | delete (204 / 404) |
+| `/`, `/about`, `/hello/world` | Rendered pages |
+| `/blog`, `/blog/{date}/{slug}` | Blog index and posts |
+| `/sitemap.xml`, `/robots.txt` | SEO files |
+| `/api/v1/hello` | Plain text greeting |
+| `/api/v1/health` | Status and system metrics |
+| `/api/v1/ready` | Readiness probe (`503` during shutdown) |
+| `/api/v1/ip` | Detected client IP and its source |
+| `/api/v1/blog/posts?offset=&limit=` | Paginated posts with rendered HTML cards |
+| `/api/v1/kv/memory/items` | Key-value store (`GET`, `POST`) |
+| `/api/v1/kv/memory/items/{key}` | Key-value store (`GET`, `PUT`, `DELETE`) |
+| `/api/v1/number/{min}/{max}/{quantity}` | Random numbers |
+| `/api/v1/password/{length}/{quantity}` | Random passwords, optional `?chars=` |
+| `/api/v1/http/headers`, `/api/v1/http/xff` | Request header inspection |
+| `/api/v1/redirect/{proto}/{domain}/{*path}` | `307` redirect to the target URL |
+
+### Writing blog posts
+
+Add a Markdown file with YAML front matter to the `blog/` directory and restart the server. Posts are listed newest first.
+
+## Deploying to Render
+
+The recommended way to deploy is [Render](https://render.com) with the included `Dockerfile`. The image builds a static musl binary, runs as a non-root user, bundles the templates, blog, and static directories, and includes a health check against `/api/v1/health`.
+
+1. Push the repository to GitHub, GitLab, or Bitbucket.
+2. In the Render dashboard, choose **New** and then **Web Service**, and connect the repository.
+3. Set **Language** to **Docker**. Render detects the `Dockerfile` at the repository root automatically.
+4. Set the **Health Check Path** to `/api/v1/health`.
+5. Add the following environment variables:
+
+   | Variable | Value | Why |
+   |----------|-------|-----|
+   | `PORT` | `8000` | Matches the port the container listens on. **Not required**, the is port is hard coded in Dockerfile to 8000 and exposed, so render can detect it automatically. |
+   | `TRUST_PROXY_HEADERS` | `true` | Render sits behind a proxy, so client IPs come from forwarded headers |
+   | `XFF_PROXY_DEPTH` | `3` | Client, Cloudflare edge, Render load balancer |
+   | `LOG_FORMAT` | `json` | Structured logs for Render's log viewer |
+
+Note: Render keeps the HTTP headers `CF-Connecting-IP` and `True-Client-IP` from Cloudflare, so the IP will be detected automatically if you set `TRUST_PROXY_HEADERS` to `true`. Therefore, setting `XFF_PROXY_DEPTH` is optional in this context.
+
+6. Click **Create Web Service**. Render builds the image and deploys it.
+
+`RENDER_EXTERNAL_URL` is set by Render automatically, so `sitemap.xml` and `robots.txt` use your service URL without extra configuration. To use a custom domain, set `PUBLIC_URL` to it.
+
+Notes:
+
+- The key-value store lives in memory, so its contents are lost on every restart or redeploy.
+- Blog posts, templates, and static files are baked into the image, so publishing a new post means redeploying.
+
+### Test the image locally
+
+```bash
+docker build -t axum-server .
+docker run --rm -p 8000:8000 axum-server
+```
+
+## Project Structure
+
+```
+src/
+  main.rs         Startup and wiring
+  app.rs          Router and middleware stack assembly
+  config.rs       CLI, environment, and default configuration
+  logging.rs      Access log (stdout) and diagnostics (stderr)
+  error.rs        Error types and JSON error responses
+  shutdown.rs     Signal handling and graceful shutdown
+  routes/         Route tables
+  handlers/       Thin HTTP adapters
+  middleware/     Rate limit, concurrency, timeout, headers, logging, static guard
+  services/       Business logic independent of HTTP
+templates/        Handlebars layouts, partials, and pages
+blog/             Markdown posts with YAML front matter
+public/           Static files served at /
+static/           Static files served at /static
+resources/        Files served at /resources
+```
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 Coded with ❤️ by [@CodeIter](https://github.com/CodeIter)
